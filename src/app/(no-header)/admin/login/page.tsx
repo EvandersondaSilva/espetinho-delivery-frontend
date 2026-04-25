@@ -1,12 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { ArrowLeft } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { useBackNavigation } from "@/hooks/useBackNavigation";
+import { handleAutoLogout } from "@/actions/auth";
 import logoLogin from "@/assets/logo login.png";
 
 export default function LoginPage() {
@@ -15,6 +19,27 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const { isAuthenticated, logout } = useAuth(false);
+
+  // Detectar navegação de volta
+  const handleBack = async () => {
+    if (isAuthenticated) {
+      // Se estiver autenticado, fazer logout automático
+      await handleAutoLogout();
+      await logout();
+    }
+  };
+
+  useBackNavigation(handleBack);
+
+  // Se usuário já está autenticado ao acessar login, fazer logout automático
+  useEffect(() => {
+    if (isAuthenticated) {
+      handleAutoLogout().then(() => {
+        logout();
+      });
+    }
+  }, [isAuthenticated, logout]);
 
   const loginUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +78,19 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-900 px-4 py-8">
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={async () => {
+          await handleBack();
+          router.push("/");
+        }}
+        className="absolute top-4 left-4 text-white hover:bg-white/15"
+        aria-label="Voltar"
+      >
+        <ArrowLeft className="w-5 h-5" />
+      </Button>
+
       <Card className="w-full max-w-md shadow-2xl">
         <div className="p-8">
           {/* Logo */}

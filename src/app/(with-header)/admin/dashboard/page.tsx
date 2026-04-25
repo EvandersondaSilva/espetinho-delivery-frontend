@@ -43,7 +43,7 @@ export default function DashboardPage() {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Produtos</h3>
             <p className="text-gray-600 mb-4">Gerencie os produtos do seu cardápio</p>
             <Button variant="outline" className="w-full">
-              Ir para Produtos
+              <Link href="/admin/dashboard/products" className="w-full"> Ir para Produtos</Link>
             </Button>
           </Card>
 
@@ -60,7 +60,7 @@ export default function DashboardPage() {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Pedidos</h3>
             <p className="text-gray-600 mb-4">Acompanhe os pedidos dos clientes</p>
             <Button variant="outline" className="w-full">
-              Ir para Pedidos
+              <Link href="/admin/dashboard/pedidos" className="w-full"> Ir para Pedidos</Link>
             </Button>
           </Card>
         </div>

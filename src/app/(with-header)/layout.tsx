@@ -1,4 +1,4 @@
-import { SiteHeader } from "@/components/ui/siteHeader";
+import { SiteHeader } from "@/components/header/siteHeader";
 
 export default function WithHeaderLayout({
   children,
