@@ -3,6 +3,7 @@ import { getAllCategories } from "@/services/catetory";
 import { getproductsByCategoryId } from "@/services/product";
 import { ProductCard } from "@/components/homeCards/productCard";
 import logo from "@/assets/logo espetinho.jpeg";
+import Footer from "@/components/header/footer";
 
 export default async function Home() {
   const categories = await getAllCategories();
@@ -68,6 +69,10 @@ bg-clip-text text-transparent drop-shadow-md">
           </div>
         )}
       </section>
+
+      <div className="mt-auto">
+        <Footer />
+      </div>
     </main>
   );
 }
