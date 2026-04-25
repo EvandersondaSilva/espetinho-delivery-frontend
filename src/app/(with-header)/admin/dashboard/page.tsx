@@ -10,7 +10,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+      <div className="min-h-screen flex items-center justify-center bg-violet-50">
         <p className="text-white">Carregando...</p>
       </div>
     );
