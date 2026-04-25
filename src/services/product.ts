@@ -70,13 +70,15 @@ export function prepareUpdateProductFormData(
 }
 
 export async function getproductsByCategoryId(categoryId: string): Promise<Product[]> {
-    return (
-        apiClient<Product[]>(`/category/${categoryId}/products`)
-    )
+    return apiClient<Product[]>(`/category/${categoryId}/products`, {
+        cache: "no-store"
+    });
 }
 
 export async function getAllProducts(): Promise<Product[]> {
-    return apiClient<Product[]>("/products");
+    return apiClient<Product[]>("/products", {
+        cache: "no-store"
+    });
 }
 
 // services/product.ts

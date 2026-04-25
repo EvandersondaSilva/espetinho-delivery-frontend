@@ -7,7 +7,9 @@ export interface Category {
 }
 
 export async function getAllCategories(): Promise<Category[]> {
-    return apiClient<Category[]>("/category");
+    return apiClient<Category[]>("/category", {
+        cache: "no-store"
+    });
 }
 
 export async function getCategories() {
