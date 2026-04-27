@@ -6,7 +6,6 @@ import { Product } from "@/services/product";
 import { formatBRLFromCents } from "@/lib/currency";
 import { ProductDialog } from "./ProductDialog";
 
-
 interface ProductCardProps {
     product: Product;
 }
@@ -22,16 +21,21 @@ export function ProductCard({ product }: ProductCardProps) {
                 className="bg-card border border-black/10 rounded-xl overflow-hidden hover:shadow-md transition-all cursor-pointer"
                 onClick={() => setDialogOpen(true)}
             >
-                {/* Mobile: layout horizontal | Desktop: layout card */}
                 <div className="flex sm:flex-col">
                     <div className="relative w-32 h-32 shrink-0 sm:w-full sm:h-48">
-                        <Image
-                            src={product.imageUrl}
-                            alt={product.name}
-                            fill
-                            sizes="(max-width: 768px) 100vw, 400px"
-                            className="object-cover"
-                        />
+                        {product.imageUrl ? (
+                            <Image
+                                src={product.imageUrl}
+                                alt={product.name}
+                                fill
+                                sizes="(max-width: 768px) 100vw, 400px"
+                                className="object-cover"
+                            />
+                        ) : (
+                            // ✅ Placeholder cinza quando não há imagem
+                            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                            </div>
+                        )}
                     </div>
                     <div className="p-4 flex flex-col justify-center">
                         <h2 className="font-semibold text-lg">{product.name}</h2>
