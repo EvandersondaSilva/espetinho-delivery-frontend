@@ -6,9 +6,9 @@ export default function Footer() {
     const currentYear = new Date().getFullYear();
 
     return (
-        <footer className="bg-red-600 text-white">
+        <footer className="bg-red-600 text-white ">
             <Separator className="bg-red-500" />
-            <div className="h-17.5 flex items-center justify-center px-4">
+            <div className="h-17.5 flex items-center justify-center px-4 gap-2">
                 <p className="flex items-center gap-2 text-sm text-red-100 tracking-wide">
                     <Flame className="w-4 h-4 text-orange-300" />
                     <span>
