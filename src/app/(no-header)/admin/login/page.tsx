@@ -77,7 +77,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-700 px-4 py-8">
+    <div className="min-h-screen flex items-center justify-center bg-#0F0F0F px-4 py-8">
       <Button
         variant="ghost"
         size="icon"
