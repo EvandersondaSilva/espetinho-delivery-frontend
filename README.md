@@ -1,36 +1,132 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+🍢 Espetinho Nilson - Sistema de Delivery
 
-## Getting Started
+Sistema completo de delivery desenvolvido para um cliente real, permitindo pedidos online, gerenciamento de produtos e controle de pedidos em tempo real.
 
-First, run the development server:
+🚀 Demonstração
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+🌐 Frontend:https://github.com/EvandersondaSilva/espetinho-delivery-frontend
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+⚙️ Backend API:https://espetinho-delivery-production.up.railway.app/
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+📸 Preview
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+🛒 Cardápio Online
+Listagem de produtos por categorias
+Carrinho de compras
+Checkout simplificado
 
-## Learn More
+📦 Painel Administrativo
+Controle de pedidos
+Gerenciamento de produtos
+Gerenciamento de categorias
+Atualização de status dos pedidos
 
-To learn more about Next.js, take a look at the following resources:
+🧑‍💻 Tecnologias Utilizadas
+Frontend
+Next.js
+TypeScript
+TailwindCSS
+shadcn/ui
+Context API
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Backend
+Node.js
+Express
+TypeScript
+Prisma ORM
+PostgreSQL
+JWT Authentication
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Deploy
+Vercel
+Railway
 
-## Deploy on Vercel
+✨ Funcionalidades
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+👤 Cliente
+Visualizar cardápio
+Adicionar produtos ao carrinho
+Alterar quantidade de itens
+Finalizar pedido
+Enviar pedido para loja
+Integração com WhatsApp
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+🧑‍💼 Admin
+Login administrativo
+Criar categorias
+Editar categorias
+Criar produtos
+Editar produtos
+Ativar/desativar produtos
+Visualizar pedidos
+Atualizar status dos pedidos
+
+🗄️ Banco de Dados
+
+O sistema utiliza PostgreSQL com Prisma ORM.
+
+Principais entidades:
+Users
+Categories
+Products
+Orders
+OrderItems
+
+🔐 Autenticação
+
+O painel administrativo utiliza autenticação JWT para proteger rotas privadas.
+
+⚙️ Como rodar o projeto
+
+📦 Backend
+
+git clone https://github.com/SEU-USUARIO/espetinho-nilson-backend
+
+cd backend
+
+npm install
+
+Configure o .env
+
+DATABASE_URL=""
+JWT_SECRET=""
+CLOUDINARY_NAME=""
+CLOUDINARY_KEY=""
+CLOUDINARY_SECRET=""
+
+Execute as migrations: npx prisma migrate deploy
+
+Inicie o servidor: npm run dev
+
+--------------
+
+💻 Frontend
+
+git clone https://github.com/SEU-USUARIO/espetinho-nilson-frontend
+
+cd frontend
+
+npm install
+
+Configure o .env.local: NEXT_PUBLIC_API_URL=""
+
+Execute: npm run dev
+
+📚 Aprendizados
+
+Esse projeto foi desenvolvido com foco em experiência prática de desenvolvimento full stack, envolvendo:
+
+Arquitetura backend
+Modelagem de banco de dados
+Integração frontend/backend
+Deploy em produção
+Autenticação
+CRUD completo
+Organização de código
+UI/UX para delivery
+
+👨‍💻 Desenvolvedor
+
+Desenvolvido por Evanderson 🚀
+
+📧 Entre em contato pelo LinkedIn/GitHub.
