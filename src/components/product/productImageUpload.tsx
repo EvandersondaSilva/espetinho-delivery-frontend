@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import Image from "next/image";
 import { Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,8 @@ export function ProductImageUpload({
     onClear,
     onRestore,
 }: ProductImageUploadProps) {
+    const fileInputId = useId();
+
     return (
         <div className="space-y-2">
             <Label className="mb-2">Imagem do produto</Label>
@@ -71,12 +74,12 @@ export function ProductImageUpload({
                 <div className="border-2 border-dashed rounded-md p-8 border-gray-300 flex flex-col items-center justify-center">
                     <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
 
-                    <Label htmlFor="editFile" className="cursor-pointer">
+                    <Label htmlFor={fileInputId} className="cursor-pointer">
                         Clique para selecionar uma imagem
                     </Label>
 
                     <Input
-                        id="editFile"
+                        id={fileInputId}
                         type="file"
                         name="file"
                         accept="image/jpeg,image/png,image/jpg"

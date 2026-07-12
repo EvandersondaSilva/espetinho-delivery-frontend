@@ -44,3 +44,11 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
   });
 }
 
+export async function getOrders(token: string): Promise<Order[]> {
+  return apiClient<Order[]>("/orders", {
+    method: "GET",
+    cache: "no-store",
+    token,
+  });
+}
+

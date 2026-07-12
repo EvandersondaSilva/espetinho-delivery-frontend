@@ -80,22 +80,3 @@ export async function getAllProducts(): Promise<Product[]> {
         cache: "no-store"
     });
 }
-
-// services/product.ts
-
-export async function updateProduct(
-    productId: string,
-    formData: FormData
-) {
-    const response = await fetch(`/api/product/${productId}`, {
-        method: "PUT",
-        body: formData,
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Erro ao atualizar produto");
-    }
-
-    return response.json();
-}

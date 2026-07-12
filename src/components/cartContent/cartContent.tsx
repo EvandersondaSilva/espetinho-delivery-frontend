@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, memo } from "react";
+import { useMemo, memo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 
 import {
@@ -17,9 +18,11 @@ import { useCart } from "@/context/cartContext";
 import { CartItemsList } from "./CartItemsList";
 import { CartTotal } from "./CartTotal";
 import { CartCheckoutForm } from "@/components/cartContent/CartCheckoutForm";
+import { OrderSuccessView } from "@/components/cartContent/OrderSuccessView";
 
 import { useCheckout } from "@/hooks/useCheckout";
 import { useCheckoutForm } from "@/hooks/useCheckoutForm";
+import { usePixReceiptUpload } from "@/hooks/usePixReceiptUpload";
 
 interface CartContentProps {
     onCartClose: () => void;
@@ -28,13 +31,25 @@ interface CartContentProps {
 export const CartContent = memo(function CartContent({
     onCartClose,
 }: CartContentProps) {
+    const router = useRouter();
+    const [completedOrderId, setCompletedOrderId] = useState<string | null>(null);
+
     const { items, total, addItem, decreaseItem, removeItem, clearCart } =
         useCart();
 
-    const { form, setField, resetForm, success, setSuccess } =
+    const { form, setField, setPaymentMethod, setNoChangeNeeded, resetForm } =
         useCheckoutForm();
 
     const { checkout, loading, error } = useCheckout();
+
+    const {
+        preview: pixReceiptPreview,
+        receiptUrl: pixReceiptUrl,
+        uploading: pixReceiptUploading,
+        error: pixReceiptError,
+        selectFile: onPixReceiptSelect,
+        clear: onPixReceiptClear,
+    } = usePixReceiptUpload();
 
     /**
      * Verifica se checkout está desabilitado
@@ -54,8 +69,38 @@ export const CartContent = memo(function CartContent({
         if (!form.paymentMethod) return true;
         if (!form.deliveryType) return true;
 
+        if (form.paymentMethod === "pix" && (!pixReceiptUrl || pixReceiptUploading))
+            return true;
+
         return false;
-    }, [form, items.length, loading]);
+    }, [form, items.length, loading, pixReceiptUrl, pixReceiptUploading]);
+
+    const handleBackToMenu = () => {
+        onCartClose();
+        router.push("/");
+    };
+
+    if (completedOrderId) {
+        return (
+            <SheetContent
+                side="right"
+                className="bg-white p-0 text-foreground dark:bg-white"
+                style={{ willChange: "transform" }}
+            >
+                <SheetHeader className="sr-only">
+                    <SheetTitle>Pedido confirmado</SheetTitle>
+                    <SheetDescription>
+                        Seu pedido foi enviado com sucesso.
+                    </SheetDescription>
+                </SheetHeader>
+
+                <OrderSuccessView
+                    orderId={completedOrderId}
+                    onBackToMenu={handleBackToMenu}
+                />
+            </SheetContent>
+        );
+    }
 
     return (
         <SheetContent
@@ -104,14 +149,23 @@ export const CartContent = memo(function CartContent({
                     paymentMethod={form.paymentMethod}
                     deliveryType={form.deliveryType}
                     error={error}
-                    success={success}
                     onCustomerNameChange={(v) => setField("customerName", v)}
                     onPhoneChange={(v) => setField("phone", v)}
                     onStreetChange={(v) => setField("street", v)}
                     onNeighborhoodChange={(v) => setField("neighborhood", v)}
                     onComplementChange={(v) => setField("complement", v)}
-                    onPaymentMethodChange={(v) => setField("paymentMethod", v)}
+                    onPaymentMethodChange={setPaymentMethod}
                     onDeliveryTypeChange={(v) => setField("deliveryType", v)}
+                    pixReceiptPreview={pixReceiptPreview}
+                    pixReceiptUrl={pixReceiptUrl}
+                    pixReceiptUploading={pixReceiptUploading}
+                    pixReceiptError={pixReceiptError}
+                    onPixReceiptSelect={onPixReceiptSelect}
+                    onPixReceiptClear={onPixReceiptClear}
+                    changeFor={form.changeFor}
+                    noChangeNeeded={form.noChangeNeeded}
+                    onChangeForChange={(v) => setField("changeFor", v)}
+                    onNoChangeNeededChange={setNoChangeNeeded}
                 />
             </div>
 
@@ -126,10 +180,11 @@ export const CartContent = memo(function CartContent({
                             items,
                             total,
                             clearCart,
+                            receiptUrl: pixReceiptUrl || undefined,
                             onSuccess: (orderId) => {
-                                setSuccess(`Pedido criado com sucesso! Código: ${orderId}`);
-                                onCartClose();
+                                setCompletedOrderId(orderId);
                                 resetForm();
+                                onPixReceiptClear();
                             },
                         })
                     }

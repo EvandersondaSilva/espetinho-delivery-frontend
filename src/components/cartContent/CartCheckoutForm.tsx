@@ -10,6 +10,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PAYMENT_METHODS, DELIVERY_OPTIONS } from "../../lib/constants";
+import { PixReceiptUpload } from "./PixReceiptUpload";
+import { CashChangeField } from "./CashChangeField";
 
 interface CartCheckoutFormProps {
   customerName: string;
@@ -20,7 +22,6 @@ interface CartCheckoutFormProps {
   paymentMethod: string;
   deliveryType: string;
   error: string | null;
-  success: string | null;
   onCustomerNameChange: (value: string) => void;
   onPhoneChange: (value: string) => void;
   onStreetChange: (value: string) => void;
@@ -28,6 +29,16 @@ interface CartCheckoutFormProps {
   onComplementChange: (value: string) => void;
   onPaymentMethodChange: (value: string) => void;
   onDeliveryTypeChange: (value: string) => void;
+  pixReceiptPreview: string | null;
+  pixReceiptUrl: string | null;
+  pixReceiptUploading: boolean;
+  pixReceiptError: string | null;
+  onPixReceiptSelect: (file: File) => void;
+  onPixReceiptClear: () => void;
+  changeFor: string;
+  noChangeNeeded: boolean;
+  onChangeForChange: (value: string) => void;
+  onNoChangeNeededChange: (value: boolean) => void;
 }
 
 /**
@@ -43,7 +54,6 @@ export const CartCheckoutForm = memo(function CartCheckoutForm({
   paymentMethod,
   deliveryType,
   error,
-  success,
   onCustomerNameChange,
   onPhoneChange,
   onStreetChange,
@@ -51,6 +61,16 @@ export const CartCheckoutForm = memo(function CartCheckoutForm({
   onComplementChange,
   onPaymentMethodChange,
   onDeliveryTypeChange,
+  pixReceiptPreview,
+  pixReceiptUrl,
+  pixReceiptUploading,
+  pixReceiptError,
+  onPixReceiptSelect,
+  onPixReceiptClear,
+  changeFor,
+  noChangeNeeded,
+  onChangeForChange,
+  onNoChangeNeededChange,
 }: CartCheckoutFormProps) {
 
   return (
@@ -94,6 +114,28 @@ export const CartCheckoutForm = memo(function CartCheckoutForm({
             </SelectContent>
           </Select>
         </div>
+
+        {/* Pagamento via PIX: chave + comprovante */}
+        {paymentMethod === "pix" && (
+          <PixReceiptUpload
+            preview={pixReceiptPreview}
+            receiptUrl={pixReceiptUrl}
+            uploading={pixReceiptUploading}
+            error={pixReceiptError}
+            onFileSelect={onPixReceiptSelect}
+            onClear={onPixReceiptClear}
+          />
+        )}
+
+        {/* Pagamento em dinheiro: troco */}
+        {paymentMethod === "dinheiro" && (
+          <CashChangeField
+            value={changeFor}
+            noChangeNeeded={noChangeNeeded}
+            onChange={onChangeForChange}
+            onNoChangeNeededChange={onNoChangeNeededChange}
+          />
+        )}
 
         {/* Campo: Tipo de Entrega */}
         <div className="grid gap-1.5">
@@ -145,12 +187,9 @@ export const CartCheckoutForm = memo(function CartCheckoutForm({
           />
         </div>
 
-        {/* Mensagens de erro e sucesso */}
+        {/* Mensagem de erro */}
         {error && (
           <p className="text-sm font-medium text-destructive">{error}</p>
-        )}
-        {success && (
-          <p className="text-sm font-medium text-primary">{success}</p>
         )}
       </div>
     </div>

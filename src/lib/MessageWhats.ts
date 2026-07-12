@@ -14,6 +14,9 @@ export function generateWhatsAppMessage({
     total,
     paymentMethod,
     deliveryType,
+    receiptUrl,
+    changeFor,
+    noChangeNeeded,
 }: {
     orderId: string;
     items: any[];
@@ -25,6 +28,9 @@ export function generateWhatsAppMessage({
     total: number;
     paymentMethod: string;
     deliveryType: string;
+    receiptUrl?: string;
+    changeFor?: string;
+    noChangeNeeded?: boolean;
 }) {
     const itemsList = items
         .map(
@@ -53,6 +59,20 @@ export function generateWhatsAppMessage({
 
     const orderNumber = `pedido #${orderId.slice(0, 8)}`;
 
+    const receiptLine =
+        paymentMethod === "pix" && receiptUrl
+            ? `\n*Comprovante PIX:* ${receiptUrl}`
+            : "";
+
+    const changeLine =
+        paymentMethod === "dinheiro"
+            ? noChangeNeeded
+                ? "\n*Troco:* Sem troco"
+                : changeFor
+                    ? `\n*Troco para:* ${changeFor}`
+                    : ""
+            : "";
+
     return `
 Olá ${customerName.toUpperCase()}!
 Seu pedido já está sendo preparado!
@@ -75,7 +95,7 @@ ${fullAddress}
 *Valor dos Produtos:* ${formatBRLFromCents(total)}
 *Taxa de Entrega:* R$ 0,00
 *Total:* ${formatBRLFromCents(total)}
-*Forma de Pagamento:* ${paymentMethodLabel}
+*Forma de Pagamento:* ${paymentMethodLabel}${receiptLine}${changeLine}
 
 *ITENS DO PEDIDO*
 ${itemsList}

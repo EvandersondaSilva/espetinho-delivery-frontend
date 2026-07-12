@@ -2,15 +2,7 @@
 
 import { apiClient } from "@/lib/api";
 import { Order } from "@/lib/types";
-import { cookies } from "next/headers";
-
-/**
- * Obtém o token de autenticação dos cookies
- */
-async function getToken(): Promise<string | null> {
-    const cookieStore = await cookies();
-    return cookieStore.get("authToken")?.value || null;
-}
+import { getToken } from "@/lib/getToken";
 
 /**
  * Action para atualizar o status de um pedido

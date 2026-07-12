@@ -3,12 +3,7 @@
 import { apiClient } from "@/lib/api";
 import { Category } from "@/lib/types";
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
-
-async function getToken(): Promise<string | null> {
-    const cookieStore = await cookies();
-    return cookieStore.get("authToken")?.value || null;
-}
+import { getToken } from "@/lib/getToken";
 
 export async function createCategoryAction(formData: FormData) {
 
@@ -33,7 +28,7 @@ export async function createCategoryAction(formData: FormData) {
 
         revalidatePath("/admin/dashboard/categories");
 
-        return { success: true, error: "" };
+        return { success: true, message: "Categoria criada com sucesso!" };
 
     } catch (error) {
         if (error instanceof Error) {
@@ -68,7 +63,7 @@ export async function updateCategoryAction(categoryId: string, formData: FormDat
 
         revalidatePath("/admin/dashboard/categories");
 
-        return { success: true, error: "" };
+        return { success: true, message: "Categoria atualizada com sucesso!" };
 
     } catch (error) {
         if (error instanceof Error) {
@@ -97,7 +92,7 @@ export async function deleteCategoryAction(categoryId: string) {
 
         revalidatePath("/admin/dashboard/categories");
 
-        return { success: true, error: "" };
+        return { success: true, message: "Categoria deletada com sucesso!" };
 
     } catch (error) {
         if (error instanceof Error) {

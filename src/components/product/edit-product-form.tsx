@@ -11,12 +11,16 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Edit } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Category, Product } from "@/lib/types";
+import { Product } from "@/lib/types";
 import { showError, showSuccess } from "@/lib/toast";
+import { formatBRLFromCents, maskBRLInput, parseBRLToCents } from "@/lib/currency";
 
-// ✅ service
-import { updateProduct } from "@/services/product";
-import { getCategories } from "@/services/catetory";
+// ✅ Server Action
+import { updateProductAction } from "@/actions/products";
+
+// ✅ hooks
+import { useCategories } from "@/hooks/useCategories";
+import { useImageUpload } from "@/hooks/useImageUpload";
 
 // ✅ components
 import { ProductImageUpload } from "@/components/product/productImageUpload";
@@ -30,45 +34,28 @@ export default function EditProductForm({
     product,
 }: EditProductFormProps) {
     const [open, setOpen] = useState(false);
-    const [categories, setCategories] = useState<Category[]>([]);
     const [categoryId, setCategoryId] = useState(product.categoryId);
     const [loading, setLoading] = useState(false);
     const [priceValue, setPriceValue] = useState("");
-    const [imagePreview, setImagePreview] = useState<string | null>(
-        product.imageUrl
-    );
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [imageRemoved, setImageRemoved] = useState(false);
 
     const router = useRouter();
 
+    const { categories } = useCategories(open);
+    const {
+        selectedFile,
+        imagePreview,
+        imageRemoved,
+        handleImageChange,
+        clearImage,
+        resetTo,
+    } = useImageUpload(product.imageUrl);
+
     useEffect(() => {
         if (open) {
-            fetchCategories();
-
-            const priceFormatted = (product.price / 100).toLocaleString(
-                "pt-BR",
-                {
-                    style: "currency",
-                    currency: "BRL",
-                }
-            );
-
-            setPriceValue(priceFormatted);
-            setImageRemoved(false);
-            setImagePreview(product.imageUrl);
+            setPriceValue(formatBRLFromCents(product.price));
+            resetTo(product.imageUrl);
         }
-    }, [open, product]);
-
-    async function fetchCategories() {
-        try {
-            const data = await getCategories();
-            setCategories(data);
-        } catch (error) {
-            console.error(error);
-            showError("Erro ao carregar categorias");
-        }
-    }
+    }, [open, product, resetTo]);
 
     async function handleUpdateProduct(
         e: React.FormEvent<HTMLFormElement>
@@ -94,80 +81,32 @@ export default function EditProductForm({
                 ) as HTMLTextAreaElement).value || ""
             );
 
-            const numbers = priceValue.replace(/\D/g, "");
-            formData.append("price", numbers);
+            formData.append("price", parseBRLToCents(priceValue).toString());
 
             if (selectedFile) {
                 formData.append("file", selectedFile);
             }
 
-            if (imageRemoved) {
-                formData.append("removeImage", "true");
+            // ✅ usando Server Action (mesmo caminho de criar produto)
+            const result = await updateProductAction(product.id, formData, imageRemoved);
+
+            if (result.success) {
+                showSuccess("Produto atualizado com sucesso!");
+                setOpen(false);
+                router.refresh();
+            } else {
+                showError(result.message || "Erro ao atualizar produto");
             }
-
-            // ✅ usando service
-            await updateProduct(product.id, formData);
-
-            showSuccess("Produto atualizado com sucesso!");
-
-            setOpen(false);
-            router.refresh();
         } catch (error) {
             console.error(error);
-            showError(
-                error instanceof Error
-                    ? error.message
-                    : "Erro ao atualizar produto"
-            );
+            showError("Erro ao atualizar produto");
         } finally {
             setLoading(false);
         }
     }
 
-    function formatToBrl(value: string) {
-        const numbers = value.replace(/\D/g, "");
-        if (!numbers) return "";
-
-        const amount = parseInt(numbers) / 100;
-
-        return amount.toLocaleString("pt-BR", {
-            style: "currency",
-            currency: "BRL",
-        });
-    }
-
     function handlePriceChange(e: React.ChangeEvent<HTMLInputElement>) {
-        setPriceValue(formatToBrl(e.target.value));
-    }
-
-    function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
-        const file = e.target.files?.[0];
-
-        if (file) {
-            if (file.size > 5 * 1024 * 1024) {
-                showError("Imagem muito grande (máx 5MB)");
-                return;
-            }
-
-            setSelectedFile(file);
-
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setImagePreview(reader.result as string);
-            };
-            reader.readAsDataURL(file);
-        }
-    }
-
-    function clearImage() {
-        setSelectedFile(null);
-        setImagePreview(null);
-        setImageRemoved(true);
-    }
-
-    function restoreImage() {
-        setImagePreview(product.imageUrl);
-        setImageRemoved(false);
+        setPriceValue(maskBRLInput(e.target.value));
     }
 
     return (
@@ -204,7 +143,7 @@ export default function EditProductForm({
                         imageRemoved={imageRemoved}
                         onImageChange={handleImageChange}
                         onClear={clearImage}
-                        onRestore={restoreImage}
+                        onRestore={() => resetTo(product.imageUrl)}
                     />
 
                     <Button

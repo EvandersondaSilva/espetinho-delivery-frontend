@@ -4,12 +4,7 @@ import { apiClient } from "@/lib/api";
 import { Product } from "@/lib/types";
 import { prepareUpdateProductFormData } from "@/services/product";
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
-
-async function getToken(): Promise<string | null> {
-    const cookieStore = await cookies();
-    return cookieStore.get("authToken")?.value || null;
-}
+import { getToken } from "@/lib/getToken";
 
 export async function createProductAction(formData: FormData) {
 
@@ -24,8 +19,7 @@ export async function createProductAction(formData: FormData) {
 
         const file = formData.get("file") as File;
         const name = formData.get("name") as string;
-        const price = formData.get("price") as string;
-        const priceInCents = Math.round(parseFloat(price) * 100);
+        const price = formData.get("price") as string; // já em centavos
         const description = formData.get("description") as string;
         const categoryId = formData.get("categoryId") as string;
 
@@ -35,7 +29,7 @@ export async function createProductAction(formData: FormData) {
         const uploadFormData = new FormData();
         uploadFormData.append("file", file);
         uploadFormData.append("name", name);
-        uploadFormData.append("price", priceInCents.toString());
+        uploadFormData.append("price", price);
         uploadFormData.append("description", description);
         uploadFormData.append("categoryId", categoryId);
 
@@ -66,8 +60,7 @@ export async function updateProductAction(
     removeImage: boolean = false
 ) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("authToken")?.value; // ✅ nome correto
+        const token = await getToken();
 
         if (!token) {
             return { success: false, message: "Token não encontrado." };

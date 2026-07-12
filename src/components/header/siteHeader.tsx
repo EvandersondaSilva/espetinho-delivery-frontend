@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Menu, LogIn, MessageCircle, Home } from "lucide-react";
 import { useState, useEffect } from "react";
 
 import { CartSheet } from "@/components/cartContent/cartSheet";
+import { PendingOrdersBadge } from "@/components/dashboard/pendingOrdersBadge";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -15,7 +17,13 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
-export function SiteHeader() {
+interface SiteHeaderProps {
+  token: string | null;
+}
+
+export function SiteHeader({ token }: SiteHeaderProps) {
+  const pathname = usePathname();
+  const isAdminRoute = pathname?.startsWith("/admin");
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuMounted, setMenuMounted] = useState(false);
 
@@ -85,7 +93,7 @@ export function SiteHeader() {
       </Sheet>
 
       <div className="flex items-center gap-2">
-        <CartSheet />
+        {isAdminRoute ? <PendingOrdersBadge token={token} /> : <CartSheet />}
       </div>
     </header>
   );

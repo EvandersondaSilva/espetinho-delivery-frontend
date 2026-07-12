@@ -9,20 +9,23 @@ type Field =
     | "neighborhood"
     | "complement"
     | "paymentMethod"
-    | "deliveryType";
+    | "deliveryType"
+    | "changeFor";
+
+const INITIAL_FORM = {
+    customerName: "",
+    phone: "",
+    street: "",
+    neighborhood: "",
+    complement: "",
+    paymentMethod: "dinheiro",
+    deliveryType: "delivery",
+    changeFor: "",
+    noChangeNeeded: false,
+};
 
 export function useCheckoutForm() {
-    const [form, setForm] = useState({
-        customerName: "",
-        phone: "",
-        street: "",
-        neighborhood: "",
-        complement: "",
-        paymentMethod: "dinheiro",
-        deliveryType: "delivery",
-    });
-
-    const [success, setSuccess] = useState<string | null>(null);
+    const [form, setForm] = useState(INITIAL_FORM);
 
     const setField = useCallback((field: Field, value: string) => {
         setForm((prev) => ({
@@ -31,23 +34,39 @@ export function useCheckoutForm() {
         }));
     }, []);
 
+    /**
+     * Troca a forma de pagamento; limpa o troco ao sair de "dinheiro"
+     */
+    const setPaymentMethod = useCallback((value: string) => {
+        setForm((prev) => ({
+            ...prev,
+            paymentMethod: value,
+            ...(value !== "dinheiro"
+                ? { changeFor: "", noChangeNeeded: false }
+                : {}),
+        }));
+    }, []);
+
+    /**
+     * Alterna "Não preciso de troco"; limpa o valor digitado quando ativado
+     */
+    const setNoChangeNeeded = useCallback((value: boolean) => {
+        setForm((prev) => ({
+            ...prev,
+            noChangeNeeded: value,
+            changeFor: value ? "" : prev.changeFor,
+        }));
+    }, []);
+
     const resetForm = useCallback(() => {
-        setForm({
-            customerName: "",
-            phone: "",
-            street: "",
-            neighborhood: "",
-            complement: "",
-            paymentMethod: "dinheiro",
-            deliveryType: "delivery",
-        });
+        setForm(INITIAL_FORM);
     }, []);
 
     return {
         form,
         setField,
+        setPaymentMethod,
+        setNoChangeNeeded,
         resetForm,
-        success,
-        setSuccess,
     };
 }

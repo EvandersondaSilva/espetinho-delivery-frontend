@@ -1,7 +1,7 @@
 "use client";
 
 import { Dialog, DialogDescription, DialogTitle, DialogTrigger, DialogHeader, DialogContent } from "@/components/ui/dialog";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react"
 import { Label } from "@/components/ui/label";
@@ -10,40 +10,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectTrigger, SelectValue, SelectItem } from "@/components/ui/select";
 import { createProductAction } from "@/actions/products";
 import { useRouter } from "next/navigation";
-import { Category } from "@/lib/types";
-import { getApiUrl } from "@/lib/api";
-import Image from "next/image";
-import { Upload } from "lucide-react";
 
 import { showSuccess, showError } from "@/lib/toast";
+import { maskBRLInput, parseBRLToCents } from "@/lib/currency";
+import { useCategories } from "@/hooks/useCategories";
+import { useImageUpload } from "@/hooks/useImageUpload";
+import { ProductImageUpload } from "@/components/product/productImageUpload";
 
 export default function ProductForm() {
     const [open, setOpen] = useState(false);
-    const [categories, setCategories] = useState<Category[]>([]);
     const [categoryId, setCategoryId] = useState("");
     const [loading, setLoading] = useState(false);
     const [priceValue, setPriceValue] = useState("");
-    const [imagePreview, setImagePreview] = useState<string | null>(null);
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const router = useRouter();
 
-    useEffect(() => {
-        if (open) {
-            fetchCategories();
-        }
-    }, [open]);
-
-    async function fetchCategories() {
-        try {
-            const response = await fetch(`${getApiUrl()}/category`);
-            if (!response.ok) throw new Error("Failed to fetch categories");
-            const data = await response.json();
-            setCategories(data);
-        } catch (error) {
-            console.error("Error fetching categories:", error);
-            showError("Erro ao carregar categorias");
-        }
-    }
+    const { categories } = useCategories(open);
+    const { selectedFile, imagePreview, imageRemoved, handleImageChange, resetTo } =
+        useImageUpload();
 
     async function handleCreateProduct(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
@@ -58,10 +41,8 @@ export default function ProductForm() {
                 formData.append("file", selectedFile);
             }
 
-            // converte o preço de BRL para número
-            const numbers = priceValue.replace(/\D/g, "");
-            const price = parseInt(numbers) / 100;
-            formData.set("price", price.toString());
+            // preço trafega sempre em centavos
+            formData.set("price", parseBRLToCents(priceValue).toString());
 
             const result = await createProductAction(formData);
 
@@ -69,8 +50,7 @@ export default function ProductForm() {
                 setOpen(false);
                 setPriceValue("");
                 setCategoryId("");
-                setImagePreview(null);
-                setSelectedFile(null);
+                resetTo(null);
                 router.refresh();
 
                 showSuccess("Produto criado com sucesso");
@@ -85,41 +65,8 @@ export default function ProductForm() {
         }
     }
 
-    function formatToBrl(value: string) {
-        const numbers = value.replace(/\D/g, "");
-
-        if (!numbers) return "";
-
-        const amount = parseInt(numbers) / 100;
-
-        return amount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-    }
-
     function handlePriceChange(e: React.ChangeEvent<HTMLInputElement>) {
-        const formatted = formatToBrl(e.target.value);
-        setPriceValue(formatted);
-    }
-
-    function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
-        const file = e.target.files?.[0];
-
-        if (file) {
-            if (file.size > 5 * 1024 * 1024) {
-                return;
-            }
-            setSelectedFile(file);
-
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setImagePreview(reader.result as string);
-            };
-            reader.readAsDataURL(file);
-        }
-    }
-
-    function clearImage() {
-        setSelectedFile(null);
-        setImagePreview(null);
+        setPriceValue(maskBRLInput(e.target.value));
     }
 
     return (
@@ -204,36 +151,13 @@ export default function ProductForm() {
                         />
                     </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="productImage" className="mb-2">
-                            Imagem do produto
-                        </Label>
-                        {imagePreview ? (
-                            <div className="relative w-full border rounded-lg overflow-hidden">
-                                <Image
-                                    src={imagePreview}
-                                    alt="Pré-visualização da imagem"
-                                    width={0}
-                                    height={0}
-                                    sizes="100vw"
-                                    className="w-full h-auto object-contain"
-                                />
-                                <Button type="button" variant="destructive" onClick={clearImage}
-                                    className="absolute top-2 right-2 z-20">
-                                    Remover imagem
-                                </Button>
-                            </div>
-                        ) : (
-                            <div className=" border-2 border-dashed rounded-md p-8 border-gray-300 flex flex-col items-center justify-center ">
-                                <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                                <Label htmlFor="file">
-                                    Clique para selecionar uma imagem
-                                </Label>
-
-                                <Input id="file" type="file" name="file" accept="image/jpeg,image/png,image/jpg" onChange={handleImageChange}
-                                    className="hidden" /></div>
-                        )}
-                    </div>
+                    <ProductImageUpload
+                        imagePreview={imagePreview}
+                        imageRemoved={imageRemoved}
+                        onImageChange={handleImageChange}
+                        onClear={() => resetTo(null)}
+                        onRestore={() => resetTo(null)}
+                    />
 
                     <Button type="submit" className="w-full bg-primary text-white hover:bg-primary" disabled={loading}>
                         {loading ? "Criando..." : "Criar produto"}

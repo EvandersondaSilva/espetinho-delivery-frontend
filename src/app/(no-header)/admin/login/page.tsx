@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useBackNavigation } from "@/hooks/useBackNavigation";
-import { handleAutoLogout } from "@/actions/auth";
 import logoLogin from "@/assets/logo login.png";
 
 export default function LoginPage() {
@@ -25,7 +24,6 @@ export default function LoginPage() {
   const handleBack = async () => {
     if (isAuthenticated) {
       // Se estiver autenticado, fazer logout automático
-      await handleAutoLogout();
       await logout();
     }
   };
@@ -35,9 +33,7 @@ export default function LoginPage() {
   // Se usuário já está autenticado ao acessar login, fazer logout automático
   useEffect(() => {
     if (isAuthenticated) {
-      handleAutoLogout().then(() => {
-        logout();
-      });
+      logout();
     }
   }, [isAuthenticated, logout]);
 
@@ -80,15 +76,15 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-#0F0F0F px-4 py-8">
       <Button
         variant="ghost"
-        size="icon"
+        size="icon-lg"
         onClick={async () => {
           await handleBack();
           router.push("/");
         }}
-        className="absolute top-4 left-4 text-white hover:bg-white/15"
+        className="absolute top-4 left-4 text-red-600 hover:bg-red-50 hover:text-red-700"
         aria-label="Voltar"
       >
-        <ArrowLeft className="w-5 h-5" />
+        <ArrowLeft className="w-7 h-7" />
       </Button>
 
       <Card className="w-full max-w-md shadow-2xl">

@@ -16,6 +16,9 @@ interface CheckoutParams {
     deliveryType: string;
     total: number;
     clearCart: () => void;
+    receiptUrl?: string;
+    changeFor?: string;
+    noChangeNeeded?: boolean;
     onSuccess?: (orderId: string) => void;
 }
 
@@ -35,6 +38,9 @@ export function useCheckout() {
             deliveryType,
             total,
             clearCart,
+            receiptUrl,
+            changeFor,
+            noChangeNeeded,
             onSuccess,
         } = data;
 
@@ -89,9 +95,12 @@ export function useCheckout() {
                 total,
                 paymentMethod,
                 deliveryType,
+                receiptUrl,
+                changeFor,
+                noChangeNeeded,
             });
 
-            const whatsappLink = `https://wa.me/558586282445?text=${encodeURIComponent(
+            const whatsappLink = `${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER}?text=${encodeURIComponent(
                 message
             )}`;
 
