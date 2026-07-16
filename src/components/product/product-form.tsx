@@ -138,6 +138,21 @@ export default function ProductForm() {
                     </div>
 
                     <div>
+                        <Label htmlFor="productStock" className="mb-2">
+                            Estoque inicial
+                        </Label>
+                        <Input
+                            id="productStock"
+                            name="stock"
+                            type="number"
+                            min={0}
+                            step={1}
+                            placeholder="Ex: 40"
+                            className="border-border bg-background"
+                        />
+                    </div>
+
+                    <div>
                         <Label htmlFor="productDescription" className="mb-2">
                             Descrição
                         </Label>

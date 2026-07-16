@@ -7,6 +7,7 @@ export interface Product {
     description: string;
     imageUrl: string;
     available: boolean;
+    stock: number;
     categoryId: string;
     createdAt: string;
 }
@@ -36,6 +37,7 @@ export function prepareUpdateProductFormData(
     const price = formData.get("price") as string;
     const description = formData.get("description") as string;
     const categoryId = formData.get("categoryId") as string;
+    const stock = formData.get("stock") as string;
 
     // Adicionar arquivo se selecionado
     if (file && file.size > 0) {
@@ -64,6 +66,11 @@ export function prepareUpdateProductFormData(
     // Categoria: opcional
     if (categoryId?.trim()) {
         uploadFormData.append("categoryId", categoryId);
+    }
+
+    // Estoque: opcional
+    if (stock?.trim()) {
+        uploadFormData.append("stock", stock);
     }
 
     return uploadFormData;

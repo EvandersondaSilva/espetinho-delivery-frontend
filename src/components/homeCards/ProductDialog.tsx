@@ -30,6 +30,7 @@ export function ProductDialog({
     const { addItem } = useCart();
     const [quantity, setQuantity] = useState(1);
     const [notes, setNotes] = useState("");
+    const isOutOfStock = !product.available || product.stock <= 0;
 
     const handleAddToCart = () => {
         addItem(product, quantity, notes.trim() || undefined);
@@ -66,6 +67,7 @@ export function ProductDialog({
                             <Button
                                 variant="outline"
                                 size="icon"
+                                disabled={isOutOfStock}
                                 onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                             >
                                 <Minus className="h-4 w-4" />
@@ -76,6 +78,7 @@ export function ProductDialog({
                             <Button
                                 variant="outline"
                                 size="icon"
+                                disabled={isOutOfStock}
                                 onClick={() => setQuantity((q) => q + 1)}
                             >
                                 <Plus className="h-4 w-4" />
@@ -88,7 +91,13 @@ export function ProductDialog({
                             onChange={(e) => setNotes(e.target.value)}
                         />
 
-                        <Button onClick={handleAddToCart}>
+                        {isOutOfStock && (
+                            <p className="text-sm font-medium text-destructive">
+                                Produto esgotado no momento
+                            </p>
+                        )}
+
+                        <Button onClick={handleAddToCart} disabled={isOutOfStock}>
                             Adicionar ao carrinho
                         </Button>
                     </div>

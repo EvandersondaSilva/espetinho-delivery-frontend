@@ -32,6 +32,7 @@ export interface Product {
     description: string | null;
     imageUrl: string | null;
     available: boolean;
+    stock: number;
     categoryId: string;
     createdAt: string;
 }
@@ -68,4 +69,3 @@ export interface Order {
     createdAt: string;
     items: OrderItem[];
 }
-

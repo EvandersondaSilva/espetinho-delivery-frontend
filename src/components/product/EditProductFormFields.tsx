@@ -87,6 +87,23 @@ export function EditProductFormFields({
                 </div>
             </div>
 
+            {/* Estoque */}
+            <div>
+                <Label htmlFor="editProductStock" className="mb-2">
+                    Estoque
+                </Label>
+                <Input
+                    id="editProductStock"
+                    name="stock"
+                    type="number"
+                    min={0}
+                    step={1}
+                    defaultValue={product.stock}
+                    placeholder="Ex: 40"
+                    className="border-border bg-background"
+                />
+            </div>
+
             {/* Descrição */}
             <div>
                 <Label htmlFor="editProductDescription" className="mb-2">

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Trash2, Eye, EyeOff } from "lucide-react";
 import { deleteProductAction, enableProductAction, disableProductAction } from "@/actions/products";
@@ -68,6 +69,13 @@ export default function ProductCard({ product }: ProductCardProps) {
 
     const priceInReais = (product.price / 100).toFixed(2);
 
+    const stockBadge =
+        product.stock === 0
+            ? { label: "Esgotado", className: "bg-red-50 text-red-700 border-red-200" }
+            : product.stock <= 5
+                ? { label: `Estoque: ${product.stock}`, className: "bg-yellow-50 text-yellow-700 border-yellow-200" }
+                : { label: `Estoque: ${product.stock}`, className: "bg-green-50 text-green-700 border-green-200" };
+
     return (
         <>
             <Card className="transition shadow hover:shadow-md flex flex-col overflow-hidden">
@@ -102,9 +110,12 @@ export default function ProductCard({ product }: ProductCardProps) {
                     <p className="text-gray-500 text-xs mb-2 line-clamp-2">
                         {product.description}
                     </p>
-                    <p className="text-lg font-bold text-primary mb-4">
+                    <p className="text-lg font-bold text-primary mb-2">
                         R$ {priceInReais}
                     </p>
+                    <Badge variant="outline" className={`w-fit mb-4 ${stockBadge.className}`}>
+                        {stockBadge.label}
+                    </Badge>
 
                     <div className="mt-auto space-y-2">
                         {/* Botões de ação (Editar + Habilitar/Desabilitar) */}

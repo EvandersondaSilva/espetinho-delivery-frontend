@@ -4,6 +4,8 @@ import { useState } from "react";
 import Image from "next/image";
 import { Product } from "@/services/product";
 import { formatBRLFromCents } from "@/lib/currency";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { ProductDialog } from "./ProductDialog";
 
 interface ProductCardProps {
@@ -12,13 +14,15 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
     const [dialogOpen, setDialogOpen] = useState(false);
-
-    if (!product.available) return null;
+    const isOutOfStock = !product.available || product.stock <= 0;
 
     return (
         <>
             <div
-                className="bg-card border border-black/10 rounded-xl overflow-hidden hover:shadow-md transition-all cursor-pointer"
+                className={cn(
+                    "bg-card border border-black/10 rounded-xl overflow-hidden hover:shadow-md transition-all cursor-pointer",
+                    isOutOfStock && "opacity-60"
+                )}
                 onClick={() => setDialogOpen(true)}
             >
                 {/* ✅ Agora é sempre horizontal (flex-row) em todas as telas */}
@@ -43,6 +47,14 @@ export function ProductCard({ product }: ProductCardProps) {
                         ) : (
                             <div className="w-full h-full bg-gray-100 flex items-center justify-center">
                             </div>
+                        )}
+                        {isOutOfStock && (
+                            <Badge
+                                variant="destructive"
+                                className="absolute top-2 left-2"
+                            >
+                                Esgotado
+                            </Badge>
                         )}
                     </div>
                 </div>

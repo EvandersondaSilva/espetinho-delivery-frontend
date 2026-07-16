@@ -22,6 +22,7 @@ export async function createProductAction(formData: FormData) {
         const price = formData.get("price") as string; // já em centavos
         const description = formData.get("description") as string;
         const categoryId = formData.get("categoryId") as string;
+        const stock = formData.get("stock") as string;
 
 
 
@@ -32,6 +33,11 @@ export async function createProductAction(formData: FormData) {
         uploadFormData.append("price", price);
         uploadFormData.append("description", description);
         uploadFormData.append("categoryId", categoryId);
+
+        // Estoque: opcional (backend usa default 0 se omitido)
+        if (stock?.trim()) {
+            uploadFormData.append("stock", stock);
+        }
 
 
 

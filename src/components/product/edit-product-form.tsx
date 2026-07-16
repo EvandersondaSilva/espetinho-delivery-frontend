@@ -83,6 +83,11 @@ export default function EditProductForm({
 
             formData.append("price", parseBRLToCents(priceValue).toString());
 
+            formData.append(
+                "stock",
+                (form.elements.namedItem("stock") as HTMLInputElement).value
+            );
+
             if (selectedFile) {
                 formData.append("file", selectedFile);
             }
