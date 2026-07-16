@@ -16,6 +16,9 @@ export interface CreateOrderInput {
       quantity: number;
     }>;
   }>;
+  paymentMethod: string;
+  changeFor?: number;
+  noChangeNeeded?: boolean;
 }
 
 export interface OrderItem {

@@ -106,6 +106,9 @@ export interface Order {
     deliveryFee: number;
     total: number;
     status: OrderStatus;
+    paymentMethod: string | null;
+    changeFor: number | null;
+    noChangeNeeded: boolean;
     createdAt: string;
     items: OrderItem[];
     combos: OrderCombo[];

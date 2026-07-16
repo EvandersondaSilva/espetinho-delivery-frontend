@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { createOrder } from "@/services/order";
 import { showError } from "@/lib/toast";
 import { generateWhatsAppMessage } from "@/lib/MessageWhats";
+import { parseBRLToCents } from "@/lib/currency";
 import { CartCombo } from "@/context/cartContext";
 
 interface CheckoutParams {
@@ -89,6 +90,12 @@ export function useCheckout() {
                     comboId: c.comboId,
                     selections: c.selections,
                 })),
+                paymentMethod,
+                changeFor:
+                    paymentMethod === "dinheiro" && !noChangeNeeded && changeFor
+                        ? parseBRLToCents(changeFor)
+                        : undefined,
+                noChangeNeeded: paymentMethod === "dinheiro" ? !!noChangeNeeded : undefined,
             });
 
             const message = generateWhatsAppMessage({
