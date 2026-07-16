@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/context/cartContext";
 
 import { CartItemsList } from "./CartItemsList";
+import { CartComboList } from "./CartComboList";
 import { CartTotal } from "./CartTotal";
 import { CartCheckoutForm } from "@/components/cartContent/CartCheckoutForm";
 import { OrderSuccessView } from "@/components/cartContent/OrderSuccessView";
@@ -34,7 +35,7 @@ export const CartContent = memo(function CartContent({
     const router = useRouter();
     const [completedOrderId, setCompletedOrderId] = useState<string | null>(null);
 
-    const { items, total, addItem, decreaseItem, removeItem, clearCart } =
+    const { items, combos, total, addItem, decreaseItem, removeItem, removeCombo, clearCart } =
         useCart();
 
     const { form, setField, setPaymentMethod, setNoChangeNeeded, resetForm } =
@@ -56,7 +57,7 @@ export const CartContent = memo(function CartContent({
      */
     const isCheckoutDisabled = useMemo(() => {
         if (loading) return true;
-        if (items.length === 0) return true;
+        if (items.length === 0 && combos.length === 0) return true;
 
         if (
             !form.customerName.trim() ||
@@ -73,7 +74,7 @@ export const CartContent = memo(function CartContent({
             return true;
 
         return false;
-    }, [form, items.length, loading, pixReceiptUrl, pixReceiptUploading]);
+    }, [form, items.length, combos.length, loading, pixReceiptUrl, pixReceiptUploading]);
 
     const handleBackToMenu = () => {
         onCartClose();
@@ -113,7 +114,7 @@ export const CartContent = memo(function CartContent({
                 <div className="flex items-center justify-between">
                     <SheetTitle>Carrinho</SheetTitle>
 
-                    {items.length > 0 && (
+                    {(items.length > 0 || combos.length > 0) && (
                         <Button variant="ghost" size="sm" onClick={clearCart}>
                             <Trash2 className="mr-2 size-4" />
                             Limpar
@@ -134,10 +135,14 @@ export const CartContent = memo(function CartContent({
                     onRemove={removeItem}
                     onDecrease={decreaseItem}
                     onIncrease={(product, notes) => addItem(product, 1, notes)}
+                    showEmptyState={combos.length === 0}
                 />
 
+                {/* Combos montados */}
+                <CartComboList combos={combos} onRemove={removeCombo} />
+
                 {/* Total */}
-                {items.length > 0 && <CartTotal total={total} />}
+                {(items.length > 0 || combos.length > 0) && <CartTotal total={total} />}
 
                 {/* Formulário */}
                 <CartCheckoutForm
@@ -178,6 +183,7 @@ export const CartContent = memo(function CartContent({
                         checkout({
                             ...form,
                             items,
+                            combos,
                             total,
                             clearCart,
                             receiptUrl: pixReceiptUrl || undefined,

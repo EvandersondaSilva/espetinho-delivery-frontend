@@ -13,6 +13,7 @@ interface CartItemsListProps {
   onRemove: (id: string, notes?: string) => void;
   onDecrease: (id: string, notes?: string) => void;
   onIncrease: (product: Product, notes?: string) => void;
+  showEmptyState?: boolean;
 }
 
 /**
@@ -24,8 +25,11 @@ export const CartItemsList = memo(function CartItemsList({
   onRemove,
   onDecrease,
   onIncrease,
+  showEmptyState = true,
 }: CartItemsListProps) {
   if (items.length === 0) {
+    if (!showEmptyState) return null;
+
     return (
       <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
         Seu carrinho está vazio. Adicione itens para finalizar o pedido.

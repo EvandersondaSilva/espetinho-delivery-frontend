@@ -2,10 +2,12 @@
 
 import { formatBRLFromCents } from "@/lib/currency";
 import { PAYMENT_METHODS, DELIVERY_OPTIONS } from "@/../src/lib/constants";
+import { CartCombo } from "@/context/cartContext";
 
 export function generateWhatsAppMessage({
     orderId,
     items,
+    combos,
     customerName,
     phone,
     street,
@@ -20,6 +22,7 @@ export function generateWhatsAppMessage({
 }: {
     orderId: string;
     items: any[];
+    combos: CartCombo[];
     customerName: string;
     phone: string;
     street: string;
@@ -40,6 +43,27 @@ export function generateWhatsAppMessage({
                 )}*\n*OBSERVAÇÃO:* ${i.notes || "-"}`
         )
         .join("\n");
+
+    const itemsSection =
+        items.length > 0
+            ? `\n\n*ITENS DO PEDIDO*\n${itemsList}`
+            : "";
+
+    const combosList = combos
+        .map((c) => {
+            const productLines = c.displayItems
+                .map((d) => `• ${d.quantity}x ${d.name}`)
+                .join("\n");
+            return `-----------------------------------\n*1x ${c.name} — ${formatBRLFromCents(
+                c.price
+            )}*\n${productLines}`;
+        })
+        .join("\n");
+
+    const combosSection =
+        combos.length > 0
+            ? `\n\n*COMBOS DO PEDIDO*\n${combosList}`
+            : "";
 
     const now = new Date().toLocaleString("pt-BR", {
         timeZone: "America/Fortaleza",
@@ -95,10 +119,7 @@ ${fullAddress}
 *Valor dos Produtos:* ${formatBRLFromCents(total)}
 *Taxa de Entrega:* R$ 0,00
 *Total:* ${formatBRLFromCents(total)}
-*Forma de Pagamento:* ${paymentMethodLabel}${receiptLine}${changeLine}
-
-*ITENS DO PEDIDO*
-${itemsList}
+*Forma de Pagamento:* ${paymentMethodLabel}${receiptLine}${changeLine}${itemsSection}${combosSection}
 
 -----------------------------------
 Obrigado pela compra!

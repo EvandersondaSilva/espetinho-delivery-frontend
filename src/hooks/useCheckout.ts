@@ -4,9 +4,11 @@ import { useState, useCallback } from "react";
 import { createOrder } from "@/services/order";
 import { showError } from "@/lib/toast";
 import { generateWhatsAppMessage } from "@/lib/MessageWhats";
+import { CartCombo } from "@/context/cartContext";
 
 interface CheckoutParams {
     items: any[];
+    combos: CartCombo[];
     customerName: string;
     phone: string;
     street: string;
@@ -29,6 +31,7 @@ export function useCheckout() {
     const checkout = useCallback(async (data: CheckoutParams) => {
         const {
             items,
+            combos,
             customerName,
             phone,
             street,
@@ -47,7 +50,7 @@ export function useCheckout() {
         setError(null);
 
         // validações
-        if (items.length === 0) {
+        if (items.length === 0 && combos.length === 0) {
             const msg = "Seu carrinho está vazio.";
             setError(msg);
             showError(msg);
@@ -82,11 +85,16 @@ export function useCheckout() {
                     productId: i.product.id,
                     quantity: i.quantity,
                 })),
+                combos: combos.map((c) => ({
+                    comboId: c.comboId,
+                    selections: c.selections,
+                })),
             });
 
             const message = generateWhatsAppMessage({
                 orderId: order.id,
                 items,
+                combos,
                 customerName: name,
                 phone: phoneValue,
                 street: streetValue,

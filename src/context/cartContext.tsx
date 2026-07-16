@@ -9,11 +9,24 @@ interface CartItem {
     notes?: string;
 }
 
+export interface CartCombo {
+    cartComboId: string;
+    comboId: string;
+    name: string;
+    price: number;
+    imageUrl: string | null;
+    selections: { productId: string; quantity: number }[];
+    displayItems: { productId: string; name: string; quantity: number }[];
+}
+
 interface CartContextProps {
     items: CartItem[];
+    combos: CartCombo[];
     addItem: (product: Product, quantity?: number, notes?: string) => void;
     decreaseItem: (productId: string, notes?: string) => void;
     removeItem: (productId: string, notes?: string) => void;
+    addCombo: (combo: Omit<CartCombo, "cartComboId">) => void;
+    removeCombo: (cartComboId: string) => void;
     clearCart: () => void;
     total: number;
     itemsCount: number;
@@ -23,6 +36,7 @@ const CartContext = createContext<CartContextProps>({} as CartContextProps);
 
 export function CartProvider({ children }: { children: ReactNode }) {
     const [items, setItems] = useState<CartItem[]>([]);
+    const [combos, setCombos] = useState<CartCombo[]>([]);
     const [isHydrated, setIsHydrated] = useState(false);
 
     // Carregar dados do localStorage ao iniciar
@@ -31,7 +45,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
             const savedCart = localStorage.getItem("cart");
             if (savedCart) {
                 try {
-                    setItems(JSON.parse(savedCart));
+                    const parsed = JSON.parse(savedCart);
+                    // Formato antigo: array puro de items. Formato novo: { items, combos }.
+                    if (Array.isArray(parsed)) {
+                        setItems(parsed);
+                    } else {
+                        setItems(parsed.items || []);
+                        setCombos(parsed.combos || []);
+                    }
                 } catch (error) {
                     console.error("Erro ao carregar carrinho do localStorage:", error);
                 }
@@ -40,12 +61,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
         }
     }, []);
 
-    // Salvar no localStorage sempre que items mudar
+    // Salvar no localStorage sempre que items/combos mudar
     useEffect(() => {
         if (isHydrated && typeof window !== "undefined") {
-            localStorage.setItem("cart", JSON.stringify(items));
+            localStorage.setItem("cart", JSON.stringify({ items, combos }));
         }
-    }, [items, isHydrated]);
+    }, [items, combos, isHydrated]);
 
     const addItem = useCallback((product: Product, quantity: number = 1, notes?: string) => {
         setItems((prev) => {
@@ -83,23 +104,44 @@ export function CartProvider({ children }: { children: ReactNode }) {
         setItems((prev) => prev.filter((item) => !(item.product.id === productId && item.notes === notes)));
     }, []);
 
+    const addCombo = useCallback((combo: Omit<CartCombo, "cartComboId">) => {
+        setCombos((prev) => [...prev, { ...combo, cartComboId: crypto.randomUUID() }]);
+    }, []);
+
+    const removeCombo = useCallback((cartComboId: string) => {
+        setCombos((prev) => prev.filter((combo) => combo.cartComboId !== cartComboId));
+    }, []);
+
     const clearCart = useCallback(() => {
         setItems([]);
+        setCombos([]);
     }, []);
 
     const total = useMemo(() =>
-        items.reduce((acc, item) => acc + item.product.price * item.quantity, 0),
-        [items]
+        items.reduce((acc, item) => acc + item.product.price * item.quantity, 0) +
+        combos.reduce((acc, combo) => acc + combo.price, 0),
+        [items, combos]
     );
 
     const itemsCount = useMemo(() =>
-        items.reduce((acc, item) => acc + item.quantity, 0),
-        [items]
+        items.reduce((acc, item) => acc + item.quantity, 0) + combos.length,
+        [items, combos]
     );
 
     const value = useMemo(
-        () => ({ items, addItem, decreaseItem, removeItem, clearCart, total, itemsCount }),
-        [items, addItem, decreaseItem, removeItem, clearCart, total, itemsCount]
+        () => ({
+            items,
+            combos,
+            addItem,
+            decreaseItem,
+            removeItem,
+            addCombo,
+            removeCombo,
+            clearCart,
+            total,
+            itemsCount,
+        }),
+        [items, combos, addItem, decreaseItem, removeItem, addCombo, removeCombo, clearCart, total, itemsCount]
     );
 
     return (

@@ -44,7 +44,7 @@ export interface ComboGroup {
     type: ComboGroupType;
     label: string;
     categoryId: string | null;
-    category: { id: string; name: string } | null;
+    category: { id: string; name: string; products?: Product[] } | null;
     productId: string | null;
     product: Product | null;
     minQuantity: number;
@@ -83,6 +83,21 @@ export interface OrderItem {
     product: OrderItemProduct;
 }
 
+export interface OrderComboItem {
+    id: string;
+    productId: string;
+    quantity: number;
+    product: OrderItemProduct;
+}
+
+export interface OrderCombo {
+    id: string;
+    comboId: string;
+    price: number;
+    combo: { id: string; name: string; imageUrl: string | null };
+    items: OrderComboItem[];
+}
+
 export interface Order {
     id: string;
     customerName: string;
@@ -93,4 +108,5 @@ export interface Order {
     status: OrderStatus;
     createdAt: string;
     items: OrderItem[];
+    combos: OrderCombo[];
 }

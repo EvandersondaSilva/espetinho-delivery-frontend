@@ -5,9 +5,16 @@ export interface CreateOrderInput {
   phone: string;
   address: string;
   deliveryFee?: number;
-  items: Array<{
+  items?: Array<{
     productId: string;
     quantity: number;
+  }>;
+  combos?: Array<{
+    comboId: string;
+    selections: Array<{
+      productId: string;
+      quantity: number;
+    }>;
   }>;
 }
 

@@ -2,6 +2,8 @@ import { Suspense } from "react";
 import Image from "next/image";
 import { ProductCatalog } from "@/components/homeCards/ProductCatalog";
 import { ProductCatalogSkeleton } from "@/components/homeCards/ProductCatalogSkeleton";
+import { CombosSection } from "@/components/homeCards/CombosSection";
+import { CombosSectionSkeleton } from "@/components/homeCards/CombosSectionSkeleton";
 import logo from "@/assets/logo espetinho.jpeg";
 
 export default function Home() {
@@ -29,6 +31,10 @@ bg-clip-text text-transparent drop-shadow-md">
           </h1>
         </div>
       </section>
+
+      <Suspense fallback={<CombosSectionSkeleton />}>
+        <CombosSection />
+      </Suspense>
 
       <Suspense fallback={<ProductCatalogSkeleton />}>
         <ProductCatalog />
