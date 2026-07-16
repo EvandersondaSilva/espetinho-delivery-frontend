@@ -66,6 +66,14 @@ export default function DashboardPage() {
               <Link href="/admin/dashboard/pedidos" className="w-full"> Ir para Pedidos</Link>
             </Button>
           </Card>
+
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Combos</h3>
+            <p className="text-gray-600 mb-4">Monte combos com produtos e categorias</p>
+            <Button variant="outline" className="w-full">
+              <Link href="/admin/dashboard/combos" className="w-full"> Ir para Combos</Link>
+            </Button>
+          </Card>
         </div>
       </div>
     </div>

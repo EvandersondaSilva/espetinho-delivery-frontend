@@ -83,7 +83,7 @@ export async function getproductsByCategoryId(categoryId: string): Promise<Produ
 }
 
 export async function getAllProducts(): Promise<Product[]> {
-    return apiClient<Product[]>("/products", {
+    return apiClient<Product[]>("/product", {
         cache: "no-store"
     });
 }

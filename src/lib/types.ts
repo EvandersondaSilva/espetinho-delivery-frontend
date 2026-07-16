@@ -37,6 +37,31 @@ export interface Product {
     createdAt: string;
 }
 
+export type ComboGroupType = "CATEGORY_CHOICE" | "FIXED_PRODUCT";
+
+export interface ComboGroup {
+    id: string;
+    type: ComboGroupType;
+    label: string;
+    categoryId: string | null;
+    category: { id: string; name: string } | null;
+    productId: string | null;
+    product: Product | null;
+    minQuantity: number;
+    maxQuantity: number;
+}
+
+export interface Combo {
+    id: string;
+    name: string;
+    description: string | null;
+    price: number;
+    imageUrl: string | null;
+    available: boolean;
+    createdAt: string;
+    groups: ComboGroup[];
+}
+
 export enum OrderStatus {
     RECEBIDO = "RECEBIDO",
     PREPARANDO = "PREPARANDO",
