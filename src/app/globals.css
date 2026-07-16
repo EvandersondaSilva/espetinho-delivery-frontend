@@ -185,3 +185,27 @@
     cursor: not-allowed;
   }
 }
+
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  #order-receipt,
+  #order-receipt * {
+    visibility: visible;
+  }
+
+  #order-receipt {
+    display: block !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 80mm;
+  }
+}

@@ -12,8 +12,9 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { formatBRLFromCents } from "@/lib/currency";
-import { CheckCircle2, Circle, Clock, Truck } from "lucide-react";
+import { CheckCircle2, Circle, Clock, Truck, Printer } from "lucide-react";
 import { updateOrderStatusAction } from "@/actions/orders";
+import { OrderReceipt } from "./OrderReceipt";
 
 
 
@@ -278,10 +279,17 @@ export function OrderModal({ orderId, onClose, token }: OrderModalProps) {
                         </div>
                     </div>
 
+                    <OrderReceipt order={order} />
+
                     <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 pt-4 border-t">
                         <DialogClose asChild>
                             <Button variant="outline">Fechar</Button>
                         </DialogClose>
+
+                        <Button variant="outline" onClick={() => window.print()} className="gap-2">
+                            <Printer className="w-4 h-4" />
+                            Imprimir pedido
+                        </Button>
 
                         {currentStatusIndex < orderStatusSequence.length - 1 && (
                             <Button onClick={handleStatusAdvance} className="gap-2">
