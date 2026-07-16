@@ -55,6 +55,21 @@ Antes, **todo erro de negócio retornava `400`**. Agora cada erro tem seu status
 
 O campo `file` **não é obrigatório**. Se omitido, o produto é criado com `imageUrl: null`. (Não existe mais o erro `Image is required`.)
 
+### 7. Combos (NOVO)
+
+- Novo recurso **Combo**: um pacote com preço fixo, composto por **groups** (`CATEGORY_CHOICE` ou `FIXED_PRODUCT`) que definem o que o cliente pode/deve escolher.
+- `POST /order` agora aceita `combos: [{ comboId, selections }]` além de `items`. `items` passou a ser **opcional** — o pedido só precisa ter ao menos 1 item **ou** 1 combo.
+- Ao mover o pedido para `PREPARANDO`, a baixa de estoque agora também considera os produtos usados dentro dos combos do pedido.
+
+### 8. Controle de estoque (NOVO)
+
+- Produto agora tem o campo **`stock`** (inteiro ≥ 0). Presente em **todas as respostas de produto**.
+- `POST /product` e `PUT /product/:id` aceitam `stock` opcional no form (default `0` na criação).
+- Ao mover um pedido para **`PREPARANDO`** (`PATCH /order/:id/status`), o estoque dos produtos é **baixado automaticamente** conforme as quantidades do pedido:
+  - A baixa ocorre **uma única vez por pedido** (controlada por flag interna `stockDeducted`), mesmo que o status vá e volte.
+  - Se o estoque de um produto zerar, ele é marcado **`available: false`** automaticamente.
+  - Se algum produto não tiver estoque suficiente, retorna **`422`** e **nada é alterado** (a operação é transacional).
+
 ---
 
 ## Convenções gerais
@@ -203,6 +218,7 @@ Público.
 | `description` | string \| null | |
 | `imageUrl` | string \| null | URL Cloudinary |
 | `available` | boolean | |
+| `stock` | number | quantidade em estoque (inteiro ≥ 0) |
 | `categoryId` | string | |
 | `createdAt` | string (ISO) | |
 
@@ -217,6 +233,7 @@ Público.
 | `price` | string | sim | Enviado como string; servidor faz `parseInt` → centavos |
 | `description` | string | não | |
 | `categoryId` | string | sim | UUID da categoria |
+| `stock` | string | não | Inteiro ≥ 0. Se omitido → `0` |
 
 **Sucesso:** `200` — produto criado.
 
@@ -236,7 +253,7 @@ curl -X POST http://localhost:3333/product \
 
 ### `PUT /product/:id` — Atualizar produto 🔒 JWT · `multipart/form-data`
 
-**Campos:** iguais ao POST. `file` opcional — se enviado, substitui a imagem. Campo extra opcional `removeImage="true"` remove a imagem atual.
+**Campos:** iguais ao POST (incluindo `stock` opcional — se enviado, sobrescreve o estoque atual). `file` opcional — se enviado, substitui a imagem. Campo extra opcional `removeImage="true"` remove a imagem atual.
 
 **Sucesso:** `200` — produto atualizado (inclui `available`).
 
@@ -278,6 +295,145 @@ Público. **Sucesso:** `200` — array (formato completo, **inclui `available`**
 
 ---
 
+## Combos
+
+Um combo tem preço **fixo** (não varia conforme os produtos escolhidos) e é composto por um ou mais **groups**:
+
+- `CATEGORY_CHOICE`: o cliente escolhe produtos de uma categoria, com quantidade total entre `minQuantity` e `maxQuantity`.
+- `FIXED_PRODUCT`: um produto específico e obrigatório, sempre na quantidade `minQuantity`.
+
+Se `maxQuantity` não for informado ao criar/editar um group, assume `maxQuantity = minQuantity` (quantidade exata).
+
+> Regra de criação: dois groups do mesmo combo não podem se sobrepor (mesma categoria repetida entre `CATEGORY_CHOICE`, ou um `FIXED_PRODUCT` cujo produto pertence à categoria de outro group). Viola essa regra → `400`.
+
+**Objeto combo (admin, `comboSelect`):**
+
+| Propriedade | Tipo | Descrição |
+|-------------|------|-----------|
+| `id` | string | |
+| `name` | string | |
+| `description` | string \| null | |
+| `price` | number | centavos, fixo |
+| `imageUrl` | string \| null | |
+| `available` | boolean | |
+| `createdAt` | string (ISO) | |
+| `groups` | array | ver abaixo |
+
+**Group do combo (`groups[]`, visão admin)**
+
+| Propriedade | Tipo | Descrição |
+|-------------|------|-----------|
+| `id` | string | |
+| `type` | string | `CATEGORY_CHOICE` \| `FIXED_PRODUCT` |
+| `label` | string | |
+| `categoryId` | string \| null | preenchido quando `CATEGORY_CHOICE` |
+| `category` | object \| null | `{ id, name }` |
+| `productId` | string \| null | preenchido quando `FIXED_PRODUCT` |
+| `product` | object \| null | produto completo |
+| `minQuantity` | number | |
+| `maxQuantity` | number | |
+
+Na listagem **pública** (`GET /combos`), cada group `CATEGORY_CHOICE` inclui em `category.products` apenas os produtos daquela categoria com `available: true` — para o frontend já saber o que oferecer como opção.
+
+---
+
+### `POST /combo` — Criar combo 🔒 JWT · `multipart/form-data`
+
+**Campos do form**
+
+| Campo | Tipo | Obrigatório | Descrição |
+|-------|------|-------------|-----------|
+| `file` | arquivo | não | Imagem (jpeg/png/jpg, máx. 5MB) |
+| `name` | string | sim | |
+| `price` | string | sim | Enviado como string; servidor faz `parseInt` → centavos |
+| `description` | string | não | |
+| `groups` | string | sim | **JSON stringificado** de um array de groups (ver abaixo) — ex.: `groups=[{"type":"FIXED_PRODUCT","label":"Bebida","productId":"uuid","minQuantity":1}]` |
+
+**Cada group em `groups`:**
+
+```json
+{
+  "type": "CATEGORY_CHOICE",
+  "label": "Escolha 2 espetos",
+  "categoryId": "uuid-categoria",
+  "minQuantity": 2,
+  "maxQuantity": 2
+}
+```
+
+| Propriedade | Tipo | Regras |
+|-------------|------|--------|
+| `type` | string | `CATEGORY_CHOICE` \| `FIXED_PRODUCT` |
+| `label` | string | não vazio |
+| `categoryId` | string | obrigatório se `CATEGORY_CHOICE`; categoria precisa existir |
+| `productId` | string | obrigatório se `FIXED_PRODUCT`; produto precisa existir |
+| `minQuantity` | number | inteiro ≥ 1 |
+| `maxQuantity` | number | opcional; se informado, ≥ `minQuantity`. Default = `minQuantity` |
+
+**Sucesso:** `200` — combo criado (formato admin).
+
+**Erros:** `400` validação Zod · `400` groups sobrepostos · `404` `Categoria não encontrada` · `404` `Produto não encontrado` · `500` `Falha ao fazer upload da imagem` · `500` `Falha ao criar combo`
+
+---
+
+### `PUT /combo/:id` — Atualizar combo 🔒 JWT · `multipart/form-data`
+
+**Campos:** iguais ao POST. Os groups existentes são **substituídos** (delete + recriação, não é diff) pelos enviados. `file` opcional — se enviado, substitui a imagem. Campo extra opcional `removeImage="true"` remove a imagem atual.
+
+**Sucesso:** `200` — combo atualizado.
+
+**Erros:** `404` `Combo não encontrado` · `404` `Categoria não encontrada` · `404` `Produto não encontrado` · `400` validação/groups sobrepostos · `500` `Falha ao editar combo`
+
+---
+
+### `GET /combo` — Listar combos (admin) 🔒 JWT
+
+Retorna **todos** os combos (disponíveis e indisponíveis), ordenados por `createdAt` desc.
+
+**Sucesso:** `200` — array de combos (formato admin).
+
+---
+
+### `GET /combo/:id` — Detalhar combo 🔒 JWT
+
+**Sucesso:** `200` — combo (formato admin).
+
+**Erros:** `404` `Combo não encontrado`
+
+---
+
+### `PATCH /combo/:id/disable` — Desabilitar combo 🔒 JWT
+
+**Sucesso:** `200` — combo com `available: false`.
+
+**Erros:** `404` `Combo não encontrado` · `500` `Falha ao desabilitar combo`
+
+---
+
+### `PATCH /combo/:id/enable` — Habilitar combo 🔒 JWT
+
+Igual ao disable, com `available: true`.
+
+**Erros:** `404` `Combo não encontrado` · `500` `Falha ao habilitar combo`
+
+---
+
+### `DELETE /combo/:id` — Excluir combo 🔒 JWT
+
+**Sucesso:** `200` — combo excluído (cascade dos groups).
+
+**Erros:** `404` `Combo não encontrado` · `400` `Combo já foi vendido e não pode ser excluído. Desabilite-o em vez disso.` (existe `OrderCombo` vinculado) · `500` `Falha ao deletar combo`
+
+---
+
+### `GET /combos` — Listar combos disponíveis
+
+Público. Retorna apenas combos com `available: true`, ordenados por `createdAt` desc. Cada group `CATEGORY_CHOICE` inclui os produtos disponíveis da categoria.
+
+**Sucesso:** `200` — array de combos (formato público).
+
+---
+
 ## Pedidos
 
 Enum de status: `RECEBIDO` | `PREPARANDO` | `SAIU` | `ENTREGUE` (padrão: `RECEBIDO`).
@@ -295,6 +451,7 @@ Enum de status: `RECEBIDO` | `PREPARANDO` | `SAIU` | `ENTREGUE` (padrão: `RECEB
 | `status` | string | enum acima |
 | `createdAt` | string (ISO) | |
 | `items` | array | ver abaixo |
+| `combos` | array | ver abaixo |
 
 **Item do pedido (`items[]`)**
 
@@ -305,6 +462,16 @@ Enum de status: `RECEBIDO` | `PREPARANDO` | `SAIU` | `ENTREGUE` (padrão: `RECEB
 | `quantity` | number | |
 | `price` | number | preço unitário congelado no momento da compra (centavos) |
 | `product` | object | `{ id, name, imageUrl }` |
+
+**Combo do pedido (`combos[]`)**
+
+| Propriedade | Tipo | Descrição |
+|-------------|------|-----------|
+| `id` | string | id do `OrderCombo` |
+| `comboId` | string | |
+| `price` | number | preço do combo congelado no momento da compra (centavos) |
+| `combo` | object | `{ id, name, imageUrl }` |
+| `items` | array | `OrderComboItem[]`: `{ id, productId, quantity, product: { id, name, imageUrl } }` — produtos que o cliente escolheu para montar o combo |
 
 ---
 
@@ -320,13 +487,31 @@ Enum de status: `RECEBIDO` | `PREPARANDO` | `SAIU` | `ENTREGUE` (padrão: `RECEB
 | `phone` | string | não vazio |
 | `address` | string | não vazio |
 | `deliveryFee` | number | inteiro ≥ 0, opcional (padrão `0`) |
-| `items` | array | mínimo 1 item |
+| `items` | array | opcional (padrão `[]`) |
+| `combos` | array | opcional (padrão `[]`) |
+
+> O pedido precisa ter ao menos **1 item ou 1 combo** — se ambos vierem vazios, `400`.
 
 Cada item: `{ productId: string, quantity: number (inteiro ≥ 1) }`
 
-**Sucesso:** `201` — pedido completo. O `total` é calculado no servidor (soma dos itens + `deliveryFee`).
+Cada combo: `{ comboId: string, selections: [{ productId: string, quantity: number (inteiro ≥ 1) }] }`. Cada entrada de `combos` gera **1 `OrderCombo` separado** — para pedir o mesmo combo duas vezes (possivelmente com escolhas diferentes), envie duas entradas.
 
-**Erros:** `404` `Um ou mais produtos não existem` · `422` `Pedido contém produto indisponível` · `500` `Falha ao criar pedido`
+`selections` precisa cobrir exatamente os groups do combo:
+- `CATEGORY_CHOICE`: a soma das quantities dos produtos selecionados daquela categoria deve estar entre `minQuantity` e `maxQuantity` do group.
+- `FIXED_PRODUCT`: precisa haver uma selection com aquele `productId` e `quantity` igual ao `minQuantity` do group.
+- Se sobrar alguma selection que não se encaixa em nenhum group, ou faltar cobertura de algum group, o **pedido inteiro** é rejeitado (nenhum item/combo é criado).
+- O preço de cada combo no pedido é o `price` fixo do `Combo` (não soma o preço dos produtos escolhidos).
+
+**Sucesso:** `201` — pedido completo. O `total` é calculado no servidor (soma dos itens + preço fixo de cada combo + `deliveryFee`).
+
+**Erros:**
+- `404` `Um ou mais produtos não existem` · `422` `Pedido contém produto indisponível`
+- `404` `Um ou mais combos não existem` · `422` `Combo "{nome}" indisponível`
+- `404` `Um ou mais produtos das selections não existem` · `422` `Seleção contém produto indisponível`
+- `400` `Seleção do combo "{nome}" não atende ao grupo obrigatório "{label}"` (FIXED_PRODUCT errado/faltando)
+- `400` `Quantidade selecionada para o grupo "{label}" do combo "{nome}" deve estar entre {min} e {max}` (CATEGORY_CHOICE fora do intervalo)
+- `400` `Seleção contém produto que não pertence a nenhum grupo do combo "{nome}"` (selection sobrando)
+- `500` `Falha ao criar pedido`
 
 ```json
 {
@@ -337,6 +522,15 @@ Cada item: `{ productId: string, quantity: number (inteiro ≥ 1) }`
   "items": [
     { "productId": "prod-uuid-1", "quantity": 2 },
     { "productId": "prod-uuid-2", "quantity": 1 }
+  ],
+  "combos": [
+    {
+      "comboId": "combo-uuid-1",
+      "selections": [
+        { "productId": "prod-uuid-3", "quantity": 2 },
+        { "productId": "prod-uuid-4", "quantity": 1 }
+      ]
+    }
   ]
 }
 ```
@@ -391,7 +585,13 @@ Cada item: `{ productId: string, quantity: number (inteiro ≥ 1) }`
 
 **Sucesso:** `200` — pedido completo atualizado.
 
-**Erros:** `404` `Pedido não encontrado` · `500` `Falha ao atualizar status do pedido`
+**⚙️ Efeito colateral — baixa de estoque:** ao mover o pedido para **`PREPARANDO`** pela primeira vez, para cada item (e também para cada produto dentro dos `combos` do pedido) o `stock` do produto é decrementado pela `quantity`. Comportamento:
+- Baixa **única por pedido** (flag `stockDeducted`): repetir `PREPARANDO`, ou fazer `PREPARANDO → RECEBIDO → PREPARANDO`, **não** baixa de novo.
+- Produtos usados dentro de combos entram na mesma baixa (somados junto com os `items` normais, se o mesmo produto aparecer nos dois).
+- Produto cujo estoque zera é marcado `available: false`.
+- Toda a operação é **transacional**: se qualquer produto não tiver estoque suficiente, nada é alterado.
+
+**Erros:** `404` `Pedido não encontrado` · `422` `Estoque insuficiente para o produto {nome}` · `500` `Falha ao atualizar status do pedido`
 
 ---
 
@@ -421,6 +621,14 @@ Cada item: `{ productId: string, quantity: number (inteiro ≥ 1) }`
 | PATCH | `/product/:id/enable` | 🔒 JWT |
 | GET | `/product` | — |
 | DELETE | `/product/:id` | 🔒 JWT |
+| POST | `/combo` | 🔒 JWT (multipart) |
+| PUT | `/combo/:id` | 🔒 JWT (multipart) |
+| GET | `/combo` | 🔒 JWT |
+| GET | `/combo/:id` | 🔒 JWT |
+| PATCH | `/combo/:id/disable` | 🔒 JWT |
+| PATCH | `/combo/:id/enable` | 🔒 JWT |
+| DELETE | `/combo/:id` | 🔒 JWT |
+| GET | `/combos` | — |
 | POST | `/order` | — |
 | POST | `/order-item` | 🔒 JWT |
 | DELETE | `/order-item/:id` | 🔒 JWT |
@@ -438,6 +646,7 @@ Refatorações que melhoraram a qualidade do backend, sem mudar request/response
 - **Classe `AppError`** (`src/errors/AppError.ts`) — erros com `statusCode`, tratados no handler global do `server.ts`.
 - **Bug corrigido no `DetailUserService`** — o `catch` antigo mascarava erros reais de banco como "usuário não encontrado".
 - **Anti-padrão de re-throw por string eliminado** — services agora identificam erros por `instanceof AppError`, não por comparação de mensagem.
-- **Selects centralizados** (`src/prisma/selects.ts`) — `productSelect`, `orderItemSelect` e `orderSelect` reutilizados, eliminando duplicação em ~11 services.
+- **Selects centralizados** (`src/prisma/selects.ts`) — `productSelect`, `orderItemSelect`, `orderSelect`, `comboSelect`, `publicComboSelect`, `orderComboSelect` reutilizados, eliminando duplicação em services.
+- **`CreateOrderService` passou a usar o `orderSelect` centralizado** em vez de um select inline duplicado.
 - **Código morto removido** — verificações `Array.isArray(id)` desnecessárias saíram de 9 controllers.
 - **Upload reordenado** — no `PUT /product/:id`, o id é validado antes do arquivo ser carregado em memória.
