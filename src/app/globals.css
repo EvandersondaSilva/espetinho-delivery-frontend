@@ -209,3 +209,17 @@
     width: 80mm;
   }
 }
+
+@keyframes cart-bounce {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.25);
+  }
+}
+
+.animate-cart-bounce {
+  animation: cart-bounce 350ms ease-out;
+}

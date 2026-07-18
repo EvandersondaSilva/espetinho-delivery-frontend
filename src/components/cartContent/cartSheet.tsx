@@ -5,11 +5,14 @@ import { ShoppingCart } from "lucide-react";
 import { Sheet, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/context/cartContext";
+import { useCartBounce } from "@/hooks/useCartBounce";
 import { CartContent } from "@/components/cartContent/cartContent";
 import { CartTriggerBadge } from "@/components/cartContent/CartTriggerBadge";
+import { cn } from "@/lib/utils";
 
 export const CartSheet = memo(function CartSheet() {
   const { itemsCount } = useCart();
+  const { bounce, onAnimationEnd } = useCartBounce();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -49,7 +52,10 @@ export const CartSheet = memo(function CartSheet() {
               : "Abrir carrinho"
           }
         >
-          <span className="relative inline-flex">
+          <span
+            className={cn("relative inline-flex", bounce && "animate-cart-bounce")}
+            onAnimationEnd={onAnimationEnd}
+          >
             <ShoppingCart className="size-5" />
             <CartTriggerBadge count={itemsCount} />
           </span>

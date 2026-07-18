@@ -30,6 +30,7 @@ interface CartContextProps {
     clearCart: () => void;
     total: number;
     itemsCount: number;
+    isHydrated: boolean;
 }
 
 const CartContext = createContext<CartContextProps>({} as CartContextProps);
@@ -140,8 +141,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
             clearCart,
             total,
             itemsCount,
+            isHydrated,
         }),
-        [items, combos, addItem, decreaseItem, removeItem, addCombo, removeCombo, clearCart, total, itemsCount]
+        [items, combos, addItem, decreaseItem, removeItem, addCombo, removeCombo, clearCart, total, itemsCount, isHydrated]
     );
 
     return (
