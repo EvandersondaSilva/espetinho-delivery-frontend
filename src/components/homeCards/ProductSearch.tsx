@@ -1,10 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Search, X } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { useMemo } from "react";
 import { ProductCard } from "@/components/homeCards/productCard";
+import { useSearch } from "@/context/searchContext";
 import type { Category } from "@/services/catetory";
 import type { Product } from "@/services/product";
 
@@ -13,7 +11,7 @@ interface ProductSearchProps {
 }
 
 export function ProductSearch({ categories }: ProductSearchProps) {
-    const [searchTerm, setSearchTerm] = useState("");
+    const { searchTerm } = useSearch();
     const hasSearch = searchTerm.trim().length > 0;
 
     const filteredCategories = useMemo(() => {
@@ -34,29 +32,6 @@ export function ProductSearch({ categories }: ProductSearchProps) {
 
     return (
         <>
-            <div className="relative max-w-2xl md:max-w-3xl mx-auto mb-10">
-                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Buscar produtos..."
-                    aria-label="Buscar produtos"
-                    className="pl-9 pr-9"
-                />
-                {hasSearch && (
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setSearchTerm("")}
-                        className="absolute right-1 top-1/2 size-7 -translate-y-1/2"
-                        aria-label="Limpar busca"
-                    >
-                        <X className="size-4" />
-                    </Button>
-                )}
-            </div>
-
             {filteredCategories.map((category) => (
                 <div key={category.id} className="mb-12">
                     <h2 className="text-2xl font-bold mb-6 text-center md:text-left">
