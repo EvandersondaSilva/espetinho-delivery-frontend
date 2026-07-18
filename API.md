@@ -70,6 +70,11 @@ O campo `file` **não é obrigatório**. Se omitido, o produto é criado com `im
   - Se o estoque de um produto zerar, ele é marcado **`available: false`** automaticamente.
   - Se algum produto não tiver estoque suficiente, retorna **`422`** e **nada é alterado** (a operação é transacional).
 
+### 9. Loja aberta/fechada (NOVO)
+
+- Novo recurso **Settings** — `GET /settings` (público) e `PATCH /settings/store-status` (JWT), ver [Configurações da loja](#configurações-da-loja).
+- `POST /order` agora **rejeita com `422`** (`A loja está fechada no momento`) quando `Settings.isStoreOpen` for `false`. O frontend deve continuar bloqueando visualmente também, mas o backend agora garante isso mesmo se alguém chamar a API direto.
+
 ---
 
 ## Convenções gerais
@@ -434,6 +439,37 @@ Público. Retorna apenas combos com `available: true`, ordenados por `createdAt`
 
 ---
 
+## Configurações da loja
+
+Config global do estabelecimento (não por usuário). Existe **sempre exatamente 1 registro** — se ainda não existir nenhum, o próprio servidor cria um com `isStoreOpen: true` na primeira leitura ou escrita (não precisa de setup manual).
+
+**Objeto settings:**
+
+| Propriedade | Tipo | Descrição |
+|-------------|------|-----------|
+| `id` | string | |
+| `isStoreOpen` | boolean | se `false`, `POST /order` passa a rejeitar novos pedidos |
+| `createdAt` | string (ISO) | |
+| `updatedAt` | string (ISO) | |
+
+### `GET /settings` — Buscar configurações da loja
+
+Público.
+
+**Sucesso:** `200` — objeto settings.
+
+---
+
+### `PATCH /settings/store-status` — Abrir/fechar a loja 🔒 JWT
+
+**Body:** `{ "isStoreOpen": boolean }`
+
+**Sucesso:** `200` — objeto settings atualizado.
+
+**Erros:** `400` validação Zod (`isStoreOpen` não é boolean) · `500` `Falha ao atualizar status da loja`
+
+---
+
 ## Pedidos
 
 Enum de status: `RECEBIDO` | `PREPARANDO` | `SAIU` | `ENTREGUE` (padrão: `RECEBIDO`).
@@ -502,9 +538,12 @@ Cada combo: `{ comboId: string, selections: [{ productId: string, quantity: numb
 - Se sobrar alguma selection que não se encaixa em nenhum group, ou faltar cobertura de algum group, o **pedido inteiro** é rejeitado (nenhum item/combo é criado).
 - O preço de cada combo no pedido é o `price` fixo do `Combo` (não soma o preço dos produtos escolhidos).
 
+> **Loja fechada:** antes de validar qualquer item/combo, o servidor checa `Settings.isStoreOpen`. Se a loja estiver fechada, o pedido é rejeitado com `422` `A loja está fechada no momento` — nenhum outro dado é processado. Ver [Configurações da loja](#configurações-da-loja).
+
 **Sucesso:** `201` — pedido completo. O `total` é calculado no servidor (soma dos itens + preço fixo de cada combo + `deliveryFee`).
 
 **Erros:**
+- `422` `A loja está fechada no momento`
 - `404` `Um ou mais produtos não existem` · `422` `Pedido contém produto indisponível`
 - `404` `Um ou mais combos não existem` · `422` `Combo "{nome}" indisponível`
 - `404` `Um ou mais produtos das selections não existem` · `422` `Seleção contém produto indisponível`
@@ -629,6 +668,8 @@ Cada combo: `{ comboId: string, selections: [{ productId: string, quantity: numb
 | PATCH | `/combo/:id/enable` | 🔒 JWT |
 | DELETE | `/combo/:id` | 🔒 JWT |
 | GET | `/combos` | — |
+| GET | `/settings` | — |
+| PATCH | `/settings/store-status` | 🔒 JWT |
 | POST | `/order` | — |
 | POST | `/order-item` | 🔒 JWT |
 | DELETE | `/order-item/:id` | 🔒 JWT |
