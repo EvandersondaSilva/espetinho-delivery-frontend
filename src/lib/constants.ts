@@ -11,3 +11,7 @@ export const DELIVERY_OPTIONS = [
   { value: "delivery", label: "Delivery" },
   { value: "pickup", label: "Retirada no balcão" },
 ] as const;
+
+export const DELIVERY_NEIGHBORHOODS = [
+  { value: "conjunto-palmeiras", label: "Conjunto Palmeiras" },
+] as const;

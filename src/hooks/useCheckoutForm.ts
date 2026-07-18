@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { DELIVERY_NEIGHBORHOODS } from "@/lib/constants";
 
 type Field =
     | "customerName"
@@ -16,7 +17,7 @@ const INITIAL_FORM = {
     customerName: "",
     phone: "",
     street: "",
-    neighborhood: "",
+    neighborhood: DELIVERY_NEIGHBORHOODS[0]?.value ?? "",
     complement: "",
     paymentMethod: "dinheiro",
     deliveryType: "delivery",

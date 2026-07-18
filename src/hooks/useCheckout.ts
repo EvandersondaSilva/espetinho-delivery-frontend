@@ -6,6 +6,7 @@ import { getStoreSettings } from "@/services/settings";
 import { showError } from "@/lib/toast";
 import { generateWhatsAppMessage } from "@/lib/MessageWhats";
 import { parseBRLToCents } from "@/lib/currency";
+import { DELIVERY_NEIGHBORHOODS } from "@/lib/constants";
 import { CartCombo } from "@/context/cartContext";
 
 interface CheckoutParams {
@@ -93,7 +94,11 @@ export function useCheckout() {
                 // o backend (422) continua sendo a rede de segurança.
             }
 
-            const fullAddress = [streetValue, neighborhoodValue, complement.trim()]
+            const neighborhoodLabel =
+                DELIVERY_NEIGHBORHOODS.find((n) => n.value === neighborhoodValue)?.label ||
+                neighborhoodValue;
+
+            const fullAddress = [streetValue, neighborhoodLabel, complement.trim()]
                 .filter((part) => part)
                 .join(" • ");
 

@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PAYMENT_METHODS, DELIVERY_OPTIONS } from "../../lib/constants";
+import { PAYMENT_METHODS, DELIVERY_OPTIONS, DELIVERY_NEIGHBORHOODS } from "../../lib/constants";
 import { PixReceiptUpload } from "./PixReceiptUpload";
 import { CashChangeField } from "./CashChangeField";
 
@@ -168,12 +168,18 @@ export const CartCheckoutForm = memo(function CartCheckoutForm({
         {/* Campo: Bairro */}
         <div className="grid gap-1.5">
           <Label htmlFor="neighborhood">Bairro</Label>
-          <Input
-            id="neighborhood"
-            value={neighborhood}
-            onChange={(e) => onNeighborhoodChange(e.target.value)}
-            placeholder="Nome do bairro"
-          />
+          <Select value={neighborhood} onValueChange={onNeighborhoodChange}>
+            <SelectTrigger id="neighborhood" className="w-full">
+              <SelectValue placeholder="Selecione o bairro" />
+            </SelectTrigger>
+            <SelectContent>
+              {DELIVERY_NEIGHBORHOODS.map((neighborhoodOption) => (
+                <SelectItem key={neighborhoodOption.value} value={neighborhoodOption.value}>
+                  {neighborhoodOption.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Campo: Complemento */}

@@ -1,7 +1,7 @@
 
 
 import { formatBRLFromCents } from "@/lib/currency";
-import { PAYMENT_METHODS, DELIVERY_OPTIONS } from "@/../src/lib/constants";
+import { PAYMENT_METHODS, DELIVERY_OPTIONS, DELIVERY_NEIGHBORHOODS } from "@/../src/lib/constants";
 import { CartCombo } from "@/context/cartContext";
 
 export function generateWhatsAppMessage({
@@ -77,7 +77,11 @@ export function generateWhatsAppMessage({
         DELIVERY_OPTIONS.find((d) => d.value === deliveryType)?.label ||
         deliveryType;
 
-    const fullAddress = [street, neighborhood, complement]
+    const neighborhoodLabel =
+        DELIVERY_NEIGHBORHOODS.find((n) => n.value === neighborhood)?.label ||
+        neighborhood;
+
+    const fullAddress = [street, neighborhoodLabel, complement]
         .filter((part) => part.trim())
         .join(" • ");
 
