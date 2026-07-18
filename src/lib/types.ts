@@ -25,6 +25,13 @@ export interface Category {
     createdAt: string;
 }
 
+export interface StoreSettings {
+    id: string;
+    isStoreOpen: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
 export interface Product {
     id: string;
     name: string;

@@ -20,6 +20,7 @@ import { CartComboList } from "./CartComboList";
 import { CartTotal } from "./CartTotal";
 import { CartCheckoutForm } from "@/components/cartContent/CartCheckoutForm";
 import { OrderSuccessView } from "@/components/cartContent/OrderSuccessView";
+import { StoreClosedDialog } from "@/components/cartContent/StoreClosedDialog";
 
 import { useCheckout } from "@/hooks/useCheckout";
 import { useCheckoutForm } from "@/hooks/useCheckoutForm";
@@ -41,7 +42,7 @@ export const CartContent = memo(function CartContent({
     const { form, setField, setPaymentMethod, setNoChangeNeeded, resetForm } =
         useCheckoutForm();
 
-    const { checkout, loading, error } = useCheckout();
+    const { checkout, loading, error, storeClosed, setStoreClosed } = useCheckout();
 
     const {
         preview: pixReceiptPreview,
@@ -198,6 +199,8 @@ export const CartContent = memo(function CartContent({
                     {loading ? "Finalizando..." : "Finalizar pedido"}
                 </Button>
             </SheetFooter>
+
+            <StoreClosedDialog open={storeClosed} onOpenChange={setStoreClosed} />
         </SheetContent>
     );
 });

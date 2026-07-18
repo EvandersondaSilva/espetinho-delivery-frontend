@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { createOrder } from "@/services/order";
+import { getStoreSettings } from "@/services/settings";
 import { showError } from "@/lib/toast";
 import { generateWhatsAppMessage } from "@/lib/MessageWhats";
 import { parseBRLToCents } from "@/lib/currency";
@@ -28,6 +29,7 @@ interface CheckoutParams {
 export function useCheckout() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [storeClosed, setStoreClosed] = useState(false);
 
     const checkout = useCallback(async (data: CheckoutParams) => {
         const {
@@ -70,8 +72,26 @@ export function useCheckout() {
             return;
         }
 
+        if (paymentMethod === "pix" && !receiptUrl) {
+            const msg = "Comprovante do PIX é obrigatório.";
+            setError(msg);
+            showError(msg);
+            return;
+        }
+
         try {
             setLoading(true);
+
+            try {
+                const settings = await getStoreSettings();
+                if (!settings.isStoreOpen) {
+                    setStoreClosed(true);
+                    return;
+                }
+            } catch {
+                // Falha na checagem de UX não deve travar o checkout;
+                // o backend (422) continua sendo a rede de segurança.
+            }
 
             const fullAddress = [streetValue, neighborhoodValue, complement.trim()]
                 .filter((part) => part)
@@ -126,7 +146,12 @@ export function useCheckout() {
             onSuccess?.(order.id);
         } catch (e) {
             const msg = e instanceof Error ? e.message : "Falha ao criar pedido.";
-            setError(msg);
+
+            if (msg.includes("loja está fechada")) {
+                setStoreClosed(true);
+            } else {
+                setError(msg);
+            }
         } finally {
             setLoading(false);
         }
@@ -136,5 +161,7 @@ export function useCheckout() {
         checkout,
         loading,
         error,
+        storeClosed,
+        setStoreClosed,
     };
 }
