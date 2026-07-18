@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Roboto } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/context/cartContext";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -47,6 +48,7 @@ export default function RootLayout({
         <CartProvider>
           <div className="flex min-h-0 flex-1 flex-col">{children}</div>
         </CartProvider>
+        <Toaster />
       </body>
     </html>
   );
