@@ -145,60 +145,65 @@ export const CartContent = memo(function CartContent({
                 {/* Total */}
                 {(items.length > 0 || combos.length > 0) && <CartTotal total={total} />}
 
-                {/* Formulário */}
-                <CartCheckoutForm
-                    customerName={form.customerName}
-                    phone={form.phone}
-                    street={form.street}
-                    neighborhood={form.neighborhood}
-                    complement={form.complement}
-                    paymentMethod={form.paymentMethod}
-                    deliveryType={form.deliveryType}
-                    error={error}
-                    onCustomerNameChange={(v) => setField("customerName", v)}
-                    onPhoneChange={(v) => setField("phone", v)}
-                    onStreetChange={(v) => setField("street", v)}
-                    onNeighborhoodChange={(v) => setField("neighborhood", v)}
-                    onComplementChange={(v) => setField("complement", v)}
-                    onPaymentMethodChange={setPaymentMethod}
-                    onDeliveryTypeChange={(v) => setField("deliveryType", v)}
-                    pixReceiptPreview={pixReceiptPreview}
-                    pixReceiptUrl={pixReceiptUrl}
-                    pixReceiptUploading={pixReceiptUploading}
-                    pixReceiptError={pixReceiptError}
-                    onPixReceiptSelect={onPixReceiptSelect}
-                    onPixReceiptClear={onPixReceiptClear}
-                    changeFor={form.changeFor}
-                    noChangeNeeded={form.noChangeNeeded}
-                    onChangeForChange={(v) => setField("changeFor", v)}
-                    onNoChangeNeededChange={setNoChangeNeeded}
-                />
+                {/* Formulário: só aparece com o carrinho não vazio */}
+                {(items.length > 0 || combos.length > 0) && (
+                    <CartCheckoutForm
+                        customerName={form.customerName}
+                        phone={form.phone}
+                        street={form.street}
+                        neighborhood={form.neighborhood}
+                        complement={form.complement}
+                        paymentMethod={form.paymentMethod}
+                        deliveryType={form.deliveryType}
+                        error={error}
+                        onCustomerNameChange={(v) => setField("customerName", v)}
+                        onPhoneChange={(v) => setField("phone", v)}
+                        onStreetChange={(v) => setField("street", v)}
+                        onNeighborhoodChange={(v) => setField("neighborhood", v)}
+                        onComplementChange={(v) => setField("complement", v)}
+                        onPaymentMethodChange={setPaymentMethod}
+                        onDeliveryTypeChange={(v) => setField("deliveryType", v)}
+                        pixReceiptPreview={pixReceiptPreview}
+                        pixReceiptUrl={pixReceiptUrl}
+                        pixReceiptUploading={pixReceiptUploading}
+                        pixReceiptError={pixReceiptError}
+                        onPixReceiptSelect={onPixReceiptSelect}
+                        onPixReceiptClear={onPixReceiptClear}
+                        changeFor={form.changeFor}
+                        noChangeNeeded={form.noChangeNeeded}
+                        onChangeForChange={(v) => setField("changeFor", v)}
+                        onNoChangeNeededChange={setNoChangeNeeded}
+                    />
+                )}
             </div>
 
-            {/* Footer */}
-            <SheetFooter className="border-t">
-                <Button
-                    className="w-full"
-                    disabled={isCheckoutDisabled}
-                    onClick={() =>
-                        checkout({
-                            ...form,
-                            items,
-                            combos,
-                            total,
-                            clearCart,
-                            receiptUrl: pixReceiptUrl || undefined,
-                            onSuccess: (orderId) => {
-                                setCompletedOrderId(orderId);
-                                resetForm();
-                                onPixReceiptClear();
-                            },
-                        })
-                    }
-                >
-                    {loading ? "Finalizando..." : "Finalizar pedido"}
-                </Button>
-            </SheetFooter>
+            {/* Footer: botão só aparece com o carrinho não vazio; disabled continua
+                como segunda camada de proteção (defense in depth) */}
+            {(items.length > 0 || combos.length > 0) && (
+                <SheetFooter className="border-t">
+                    <Button
+                        className="w-full"
+                        disabled={isCheckoutDisabled}
+                        onClick={() =>
+                            checkout({
+                                ...form,
+                                items,
+                                combos,
+                                total,
+                                clearCart,
+                                receiptUrl: pixReceiptUrl || undefined,
+                                onSuccess: (orderId) => {
+                                    setCompletedOrderId(orderId);
+                                    resetForm();
+                                    onPixReceiptClear();
+                                },
+                            })
+                        }
+                    >
+                        {loading ? "Finalizando..." : "Finalizar pedido"}
+                    </Button>
+                </SheetFooter>
+            )}
 
             <StoreClosedDialog open={storeClosed} onOpenChange={setStoreClosed} />
         </SheetContent>

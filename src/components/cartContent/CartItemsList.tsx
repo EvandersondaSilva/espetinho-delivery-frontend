@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { ShoppingCart } from "lucide-react";
 import { Product } from "@/services/product";
 import { CartItemRow } from "./CartItemRow";
 
@@ -31,8 +32,12 @@ export const CartItemsList = memo(function CartItemsList({
     if (!showEmptyState) return null;
 
     return (
-      <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
-        Seu carrinho está vazio. Adicione itens para finalizar o pedido.
+      <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-12 text-center">
+        <ShoppingCart className="size-10 text-muted-foreground" />
+        <p className="font-medium">Seu carrinho está vazio</p>
+        <p className="text-sm text-muted-foreground">
+          Adicione produtos do cardápio para continuar
+        </p>
       </div>
     );
   }
