@@ -10,19 +10,19 @@ export async function ProductCatalog() {
             const products = await getproductsByCategoryId(category.id);
             return {
                 ...category,
-                products: products.filter((product) => product.available),
+                products,
             };
         })
     );
 
-    const categoriesWithAvailableProducts = categoriesWithProducts.filter(
+    const categoriesWithProductsOnly = categoriesWithProducts.filter(
         (category) => category.products.length > 0
     );
 
     return (
         <section className="max-w-6xl mx-auto px-4 pb-16">
-            {categoriesWithAvailableProducts.length > 0 ? (
-                <ProductSearch categories={categoriesWithAvailableProducts} />
+            {categoriesWithProductsOnly.length > 0 ? (
+                <ProductSearch categories={categoriesWithProductsOnly} />
             ) : (
                 <div className="text-center py-12">
                     <p className="text-muted-foreground text-lg">
