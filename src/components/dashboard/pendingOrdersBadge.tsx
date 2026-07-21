@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Bell } from "lucide-react";
-import { apiClient } from "@/lib/api";
-import { Order } from "@/services/order";
+import { getActiveOrders } from "@/services/order";
 
 const POLL_INTERVAL_MS = 30_000;
 
@@ -19,13 +18,9 @@ export function PendingOrdersBadge({ token }: PendingOrdersBadgeProps) {
         if (!token) return;
 
         try {
-            const orders = await apiClient<Order[]>("/orders", {
-                method: "GET",
-                cache: "no-store",
-                token,
-            });
+            const orders = await getActiveOrders(token);
 
-            setPendingCount(orders.filter((order) => order.status !== "ENTREGUE").length);
+            setPendingCount(orders.length);
         } catch {
             // Polling silencioso: não deve interromper a navegação do admin.
         }

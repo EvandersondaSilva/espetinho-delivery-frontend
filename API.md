@@ -75,6 +75,13 @@ O campo `file` **não é obrigatório**. Se omitido, o produto é criado com `im
 - Novo recurso **Settings** — `GET /settings` (público) e `PATCH /settings/store-status` (JWT), ver [Configurações da loja](#configurações-da-loja).
 - `POST /order` agora **rejeita com `422`** (`A loja está fechada no momento`) quando `Settings.isStoreOpen` for `false`. O frontend deve continuar bloqueando visualmente também, mas o backend agora garante isso mesmo se alguém chamar a API direto.
 
+### 10. `GET /orders` agora é paginado (BREAKING)
+
+- **Antes:** `200` retornava um **array puro** de pedidos.
+- **Agora:** `200` retorna `{ orders, page, limit, hasMore }` — o array de pedidos está em `orders`, não mais na raiz da resposta.
+- Aceita `page`, `limit` (máx. 50) e `status` como query params, todos opcionais — sem eles, comportamento equivalente ao anterior (todos os status, primeira página de 20).
+- **Impacto no frontend:** quem fazia `response.data` esperando um array agora precisa usar `response.data.orders`.
+
 ---
 
 ## Convenções gerais
@@ -611,11 +618,32 @@ Cada combo: `{ comboId: string, selections: [{ productId: string, quantity: numb
 
 ---
 
-### `GET /orders` — Listar todos os pedidos 🔒 JWT
+### `GET /orders` — Listar pedidos (paginado) 🔒 JWT
 
-**Sucesso:** `200` — array de pedidos (ordenado por `createdAt` desc).
+**Query params (todos opcionais)**
 
-**Erros:** `500` `Falha ao listar pedidos`
+| Propriedade | Tipo | Regras |
+|-------------|------|--------|
+| `page` | number | inteiro ≥ 1, default `1` |
+| `limit` | number | inteiro entre 1 e 50, default `20` |
+| `status` | string | `RECEBIDO` \| `PREPARANDO` \| `SAIU` \| `ENTREGUE` — se omitido, retorna todos os status |
+
+Pedidos ordenados por `createdAt` desc (mais recentes primeiro).
+
+**Sucesso:** `200`
+
+```json
+{
+  "orders": [ /* array de pedidos, formato completo */ ],
+  "page": 1,
+  "limit": 20,
+  "hasMore": true
+}
+```
+
+> **Como `hasMore` é calculado:** o servidor busca `limit + 1` registros em vez de fazer uma segunda query de `COUNT`. Se vier o registro extra, `hasMore: true` e ele é descartado antes de devolver a página; senão `hasMore: false`. Evita uma query adicional na tabela de pedidos a cada listagem.
+
+**Erros:** `400` validação Zod (`page`/`limit`/`status` inválidos) · `500` `Falha ao listar pedidos`
 
 ---
 

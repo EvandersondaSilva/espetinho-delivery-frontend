@@ -35,6 +35,8 @@ export interface OrderItem {
 
 export type OrderStatus = "RECEBIDO" | "PREPARANDO" | "SAIU" | "ENTREGUE";
 
+const ACTIVE_ORDER_STATUSES: OrderStatus[] = ["RECEBIDO", "PREPARANDO", "SAIU"];
+
 export interface Order {
   id: string;
   customerName: string;
@@ -54,11 +56,48 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
   });
 }
 
-export async function getOrders(token: string): Promise<Order[]> {
-  return apiClient<Order[]>("/orders", {
+export interface PaginatedOrders {
+  orders: Order[];
+  page: number;
+  limit: number;
+  hasMore: boolean;
+}
+
+export interface GetOrdersParams {
+  page?: number;
+  limit?: number;
+  status?: OrderStatus;
+}
+
+export async function getOrders(
+  token: string,
+  params?: GetOrdersParams
+): Promise<PaginatedOrders> {
+  const query = new URLSearchParams();
+  if (params?.page) query.set("page", String(params.page));
+  if (params?.limit) query.set("limit", String(params.limit));
+  if (params?.status) query.set("status", params.status);
+
+  const qs = query.toString();
+
+  return apiClient<PaginatedOrders>(`/orders${qs ? `?${qs}` : ""}`, {
     method: "GET",
     cache: "no-store",
     token,
   });
+}
+
+/**
+ * Busca os pedidos "ativos" (ainda não entregues) mesclando 3 buscas
+ * paralelas, uma por status - o backend só filtra por um status por vez.
+ */
+export async function getActiveOrders(token: string): Promise<Order[]> {
+  const results = await Promise.all(
+    ACTIVE_ORDER_STATUSES.map((status) => getOrders(token, { status, limit: 50 }))
+  );
+
+  return results
+    .flatMap((result) => result.orders)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
