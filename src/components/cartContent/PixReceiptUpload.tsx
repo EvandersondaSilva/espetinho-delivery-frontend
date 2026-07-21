@@ -7,8 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { showSuccess, showError } from "@/lib/toast";
-
-const PIX_KEY = process.env.NEXT_PUBLIC_PIX_KEY;
+import { PIX_INFO } from "@/lib/constants";
 
 interface PixReceiptUploadProps {
     preview: string | null;
@@ -30,10 +29,8 @@ export function PixReceiptUpload({
     const [copied, setCopied] = useState(false);
 
     const handleCopy = async () => {
-        if (!PIX_KEY) return;
-
         try {
-            await navigator.clipboard.writeText(PIX_KEY);
+            await navigator.clipboard.writeText(PIX_INFO.key);
             setCopied(true);
             showSuccess("Chave PIX copiada!");
             setTimeout(() => setCopied(false), 2000);
@@ -54,7 +51,7 @@ export function PixReceiptUpload({
                 <div className="flex items-center gap-2">
                     <Input
                         readOnly
-                        value={PIX_KEY || "Chave PIX não configurada"}
+                        value={PIX_INFO.key}
                         className="bg-gray-50"
                     />
                     <Button
@@ -62,13 +59,16 @@ export function PixReceiptUpload({
                         variant="outline"
                         size="icon"
                         onClick={handleCopy}
-                        disabled={!PIX_KEY}
                         aria-label="Copiar chave PIX"
                     >
                         {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
                     </Button>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
+                <div className="mt-2 space-y-0.5 text-sm text-muted-foreground">
+                    <p>Titular: {PIX_INFO.holderName}</p>
+                    <p>Banco: {PIX_INFO.bank}</p>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
                     Faça o pagamento e envie o comprovante abaixo.
                 </p>
             </div>

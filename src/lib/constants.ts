@@ -15,3 +15,9 @@ export const DELIVERY_OPTIONS = [
 export const DELIVERY_NEIGHBORHOODS = [
   { value: "conjunto-palmeiras", label: "Conjunto Palmeiras" },
 ] as const;
+
+export const PIX_INFO = {
+  key: "033.747.063-47",
+  holderName: "Antônio Ivanilson Silva Oliveira",
+  bank: "Itaú",
+} as const;
