@@ -2,7 +2,7 @@ import { Order } from "@/lib/types";
 import { formatBRLFromCents } from "@/lib/currency";
 import { PAYMENT_METHODS } from "@/lib/constants";
 
-const SEPARATOR = "-".repeat(32);
+const SEPARATOR = "-".repeat(28);
 
 function formatDate(dateString: string): string {
     const date = new Date(dateString);
@@ -23,7 +23,7 @@ interface ReceiptRowProps {
 function ReceiptRow({ left, right }: ReceiptRowProps) {
     return (
         <div className="flex justify-between gap-2">
-            <span>{left}</span>
+            <span className="min-w-0 wrap-break-word">{left}</span>
             {right && <span className="shrink-0">{right}</span>}
         </div>
     );
@@ -53,7 +53,7 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
     const subtotal = order.total - order.deliveryFee;
 
     return (
-        <div id="order-receipt" className="hidden font-mono text-[12px] leading-tight text-black">
+        <div id="order-receipt" className="hidden font-mono text-[14px] leading-tight text-black">
             <p className="text-center font-bold">ESPETINHO DO NILSON</p>
             <p>{SEPARATOR}</p>
 

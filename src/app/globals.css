@@ -206,7 +206,9 @@
     position: absolute;
     top: 0;
     left: 0;
-    width: 80mm;
+    /* 72mm = area imprimivel real de uma bobina de 80mm (o driver reserva
+       ~8mm de margem fisica). Manter em 80mm cortava os precos a direita. */
+    width: 72mm;
   }
 }
 
