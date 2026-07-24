@@ -4,13 +4,19 @@ const PRINTER_NAME = "POS-80(copy of 3)";
 
 // Largura em caracteres da linha do cupom em texto puro (fonte do firmware da
 // impressora térmica, não relacionada ao CSS/72mm usado no cupom HTML via
-// window.print()). Reaproveita o mesmo número já calibrado no cupom HTML por
-// ser o valor mais seguro disponível — não há impressora física disponível
-// aqui pra validar um valor maior.
-const RECEIPT_WIDTH = 33;
+// window.print()). 42 = padrão de POS-80 com 512 dots em Font A. Se a
+// impressora for de 576 dots, sobra uma margem à direita — nada quebra.
+const RECEIPT_WIDTH = 42;
 
 const ESC_INIT = "\x1B\x40";
 const PAPER_CUT = { type: "raw" as const, format: "command" as const, flavor: "hex" as const, data: "1D5600" };
+
+// A guilhotina fica ~15-25mm depois da cabeça de impressão, e o GS V 0 (1D5600)
+// corta na posição atual sem avançar papel. Sem esse avanço as últimas linhas
+// ainda não passaram pela lâmina: o cupom sai cortado no meio do texto e o
+// resto fica preso no rolo, saindo grudado no topo do próximo pedido.
+// 6 linhas (~21mm) cobrem o offset da POS-80 com folga.
+const FEED_BEFORE_CUT = "\n".repeat(6);
 
 function centerText(text: string, width: number): string {
     const leftPad = Math.max(Math.floor((width - text.length) / 2), 0);
@@ -68,8 +74,10 @@ function buildPlainTextReceipt(order: ReceiptOrderInput): string {
     }
 
     lines.push(separator);
+    lines.push(centerText("Obrigado pela compra!", RECEIPT_WIDTH));
+    lines.push(separator);
 
-    return lines.join("\n") + "\n\n\n";
+    return lines.join("\n") + FEED_BEFORE_CUT;
 }
 
 let connectPromise: Promise<void> | null = null;

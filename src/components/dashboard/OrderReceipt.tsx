@@ -68,6 +68,9 @@ export function OrderReceipt({ order }: OrderReceiptProps) {
             <p>{SEPARATOR}</p>
             <p>Forma de pagamento: {data.paymentMethodLabel}</p>
             {data.changeLine && <p>{data.changeLine}</p>}
+
+            <p>{SEPARATOR}</p>
+            <p className="text-center">Obrigado pela compra!</p>
             <p>{SEPARATOR}</p>
         </div>
     );
