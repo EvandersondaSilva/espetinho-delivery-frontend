@@ -88,6 +88,22 @@ O campo `file` **não é obrigatório**. Se omitido, o produto é criado com `im
 - **Antes:** `GET /category` retornava ordenado por `createdAt` desc (mais recente primeiro).
 - **Agora:** ordenado por `displayOrder` asc (menor primeiro); em empate, por `createdAt` asc. Categorias existentes têm `displayOrder: 0` até o admin reordenar.
 
+### 12. Impressão automática de pedidos (NOVO, aditivo)
+
+- Pedido agora tem o campo **`autoPrinted`** (boolean, default `false`), presente em todas as respostas de pedido.
+- Nova rota `PATCH /order/:id/mark-printed` marca `autoPrinted: true` — dá suporte à futura impressão automática via QZ Tray no frontend (evita reimprimir o mesmo pedido a cada polling).
+- Não quebra nada existente: campo novo com default, rota nova.
+
+### 13. Combo: group `CATEGORY_CHOICE` agora aceita múltiplas categorias (BREAKING)
+
+Corrige um bug de modelagem: antes, um group `CATEGORY_CHOICE` só podia apontar para **1 categoria**. Pra modelar "escolha 2 espetos de qualquer tipo de carne" (bovina, frango ou suína), era preciso criar 3 groups separados — e como são independentes, o sistema permitia até `maxQuantity` de **cada um**, quando a intenção era um limite **combinado** entre as 3 categorias.
+
+- **Payload (`POST`/`PUT /combo`):** campo `categoryId` (string) do group `CATEGORY_CHOICE` foi substituído por **`categoryIds`** (array de string, mín. 1 item).
+- **Resposta (`GET /combo`, `GET /combo/:id`, `GET /combos`):** `group.categoryId`/`group.category` foram substituídos por **`group.categories`** (array `[{ id, name }, ...]`). Na listagem pública, o antigo `group.category.products` virou **`group.products`** — lista agregada dos produtos disponíveis de todas as categorias do group.
+- **Regra de overlap** passou a considerar todas as categorias de cada group: uma categoria não pode aparecer em mais de um lugar do mesmo combo (nem repetida no próprio `categoryIds`, nem em outro group).
+- **Validação do pedido (`POST /order`):** a soma das quantities de um group `CATEGORY_CHOICE` agora considera produtos de **qualquer uma** das categorias do group, não mais de uma única categoria.
+- **Migration destrutiva:** a coluna `categoryId` de `combo_groups` foi removida (substituída pela tabela `combo_group_categories`, many-to-many). **Combos cadastrados antes dessa mudança perdem a associação de categoria dos groups `CATEGORY_CHOICE`** — o admin precisa recriá-los. Pedidos já feitos (`OrderCombo`/`OrderComboItem`) não são afetados, pois são snapshots independentes.
+
 ---
 
 ## Convenções gerais
@@ -322,12 +338,12 @@ Público. **Sucesso:** `200` — array (formato completo, **inclui `available`**
 
 Um combo tem preço **fixo** (não varia conforme os produtos escolhidos) e é composto por um ou mais **groups**:
 
-- `CATEGORY_CHOICE`: o cliente escolhe produtos de uma categoria, com quantidade total entre `minQuantity` e `maxQuantity`.
+- `CATEGORY_CHOICE`: o cliente escolhe produtos de **uma ou mais categorias combinadas**, com quantidade total entre `minQuantity` e `maxQuantity`. Ex.: "escolha 2 espetos de qualquer tipo de carne" = um group com `categoryIds: [carnes-bovina, carnes-frango, carnes-suina]`, `minQuantity: 2`, `maxQuantity: 2` — soma-se a quantidade de produtos de **qualquer uma** dessas categorias.
 - `FIXED_PRODUCT`: um produto específico e obrigatório, sempre na quantidade `minQuantity`.
 
 Se `maxQuantity` não for informado ao criar/editar um group, assume `maxQuantity = minQuantity` (quantidade exata).
 
-> Regra de criação: dois groups do mesmo combo não podem se sobrepor (mesma categoria repetida entre `CATEGORY_CHOICE`, ou um `FIXED_PRODUCT` cujo produto pertence à categoria de outro group). Viola essa regra → `400`.
+> Regra de criação: nenhuma categoria pode aparecer em mais de um lugar do mesmo combo — nem repetida dentro do `categoryIds` do próprio group, nem em outro group `CATEGORY_CHOICE`, nem como categoria do produto de um `FIXED_PRODUCT`. Viola essa regra → `400`.
 
 **Objeto combo (admin, `comboSelect`):**
 
@@ -349,14 +365,13 @@ Se `maxQuantity` não for informado ao criar/editar um group, assume `maxQuantit
 | `id` | string | |
 | `type` | string | `CATEGORY_CHOICE` \| `FIXED_PRODUCT` |
 | `label` | string | |
-| `categoryId` | string \| null | preenchido quando `CATEGORY_CHOICE` |
-| `category` | object \| null | `{ id, name }` |
+| `categories` | array | `[{ id, name }, ...]` — todas as categorias do group; vazio (`[]`) quando `FIXED_PRODUCT` |
 | `productId` | string \| null | preenchido quando `FIXED_PRODUCT` |
 | `product` | object \| null | produto completo |
 | `minQuantity` | number | |
 | `maxQuantity` | number | |
 
-Na listagem **pública** (`GET /combos`), cada group `CATEGORY_CHOICE` inclui em `category.products` apenas os produtos daquela categoria com `available: true` — para o frontend já saber o que oferecer como opção.
+Na listagem **pública** (`GET /combos`), cada group `CATEGORY_CHOICE` ganha um campo extra `products` — lista **agregada** dos produtos com `available: true` de **todas** as categorias do group (não mais aninhado dentro de uma única categoria).
 
 ---
 
@@ -377,8 +392,8 @@ Na listagem **pública** (`GET /combos`), cada group `CATEGORY_CHOICE` inclui em
 ```json
 {
   "type": "CATEGORY_CHOICE",
-  "label": "Escolha 2 espetos",
-  "categoryId": "uuid-categoria",
+  "label": "Escolha 2 espetos de qualquer carne",
+  "categoryIds": ["uuid-carnes-bovina", "uuid-carnes-frango", "uuid-carnes-suina"],
   "minQuantity": 2,
   "maxQuantity": 2
 }
@@ -388,7 +403,7 @@ Na listagem **pública** (`GET /combos`), cada group `CATEGORY_CHOICE` inclui em
 |-------------|------|--------|
 | `type` | string | `CATEGORY_CHOICE` \| `FIXED_PRODUCT` |
 | `label` | string | não vazio |
-| `categoryId` | string | obrigatório se `CATEGORY_CHOICE`; categoria precisa existir |
+| `categoryIds` | array de string | obrigatório se `CATEGORY_CHOICE`, mín. 1 item; todas as categorias precisam existir |
 | `productId` | string | obrigatório se `FIXED_PRODUCT`; produto precisa existir |
 | `minQuantity` | number | inteiro ≥ 1 |
 | `maxQuantity` | number | opcional; se informado, ≥ `minQuantity`. Default = `minQuantity` |
@@ -451,7 +466,7 @@ Igual ao disable, com `available: true`.
 
 ### `GET /combos` — Listar combos disponíveis
 
-Público. Retorna apenas combos com `available: true`, ordenados por `createdAt` desc. Cada group `CATEGORY_CHOICE` inclui os produtos disponíveis da categoria.
+Público. Retorna apenas combos com `available: true`, ordenados por `createdAt` desc. Cada group `CATEGORY_CHOICE` inclui `categories` (metadados) e `products` (lista agregada dos produtos disponíveis de todas as categorias do group).
 
 **Sucesso:** `200` — array de combos (formato público).
 
@@ -506,6 +521,7 @@ Enum de status: `RECEBIDO` | `PREPARANDO` | `SAIU` | `ENTREGUE` (padrão: `RECEB
 | `paymentMethod` | string \| null | `"dinheiro"` \| `"debito"` \| `"credito"` \| `"pix"` — `null` em pedidos criados antes desse campo existir |
 | `changeFor` | number \| null | troco em centavos, só quando `paymentMethod` é `"dinheiro"` e o cliente informou um valor |
 | `noChangeNeeded` | boolean | `true` quando o cliente marcou "não preciso de troco" |
+| `autoPrinted` | boolean | `true` depois que `PATCH /order/:id/mark-printed` é chamado — usado pelo frontend (QZ Tray) pra não reimprimir o mesmo pedido a cada polling |
 | `createdAt` | string (ISO) | |
 | `items` | array | ver abaixo |
 | `combos` | array | ver abaixo |
@@ -682,6 +698,18 @@ Pedidos ordenados por `createdAt` desc (mais recentes primeiro).
 
 ---
 
+### `PATCH /order/:id/mark-printed` — Marcar pedido como impresso 🔒 JWT
+
+Marca `autoPrinted: true` no pedido. Existe pra suportar a impressão automática via QZ Tray no frontend: a cada polling, o frontend só imprime pedidos com `autoPrinted: false` e chama essa rota depois de imprimir, evitando reimprimir o mesmo pedido.
+
+**Body:** vazio.
+
+**Sucesso:** `200` — pedido completo, com `autoPrinted: true`.
+
+**Erros:** `404` `Pedido não encontrado` · `500` `Falha ao marcar pedido como impresso`
+
+---
+
 ### `DELETE /order/:id` — Cancelar/excluir pedido 🔒 JWT
 
 **Sucesso:** `200` — pedido excluído (último estado, com itens).
@@ -724,6 +752,7 @@ Pedidos ordenados por `createdAt` desc (mais recentes primeiro).
 | GET | `/orders` | 🔒 JWT |
 | GET | `/order/:id` | 🔒 JWT |
 | PATCH | `/order/:id/status` | 🔒 JWT |
+| PATCH | `/order/:id/mark-printed` | 🔒 JWT |
 | DELETE | `/order/:id` | 🔒 JWT |
 
 ---
