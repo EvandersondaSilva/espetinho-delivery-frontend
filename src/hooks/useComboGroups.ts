@@ -6,7 +6,7 @@ import { ComboGroupType } from "@/lib/types";
 export interface ComboGroupFormValue {
     type: ComboGroupType;
     label: string;
-    categoryId: string;
+    categoryIds: string[];
     productId: string;
     minQuantity: number;
     /** string para permitir campo vazio; "" = deixa o backend usar minQuantity como default */
@@ -16,7 +16,7 @@ export interface ComboGroupFormValue {
 const EMPTY_GROUP: ComboGroupFormValue = {
     type: "CATEGORY_CHOICE",
     label: "",
-    categoryId: "",
+    categoryIds: [],
     productId: "",
     minQuantity: 1,
     maxQuantity: "",
@@ -61,8 +61,8 @@ export function validateComboGroups(groups: ComboGroupFormValue[]): string | nul
             return 'Preencha o texto ("label") de todos os grupos.';
         }
 
-        if (group.type === "CATEGORY_CHOICE" && !group.categoryId) {
-            return 'Selecione a categoria em todos os grupos do tipo "Escolha por categoria".';
+        if (group.type === "CATEGORY_CHOICE" && group.categoryIds.length === 0) {
+            return 'Selecione pelo menos uma categoria em todos os grupos do tipo "Escolha por categoria".';
         }
 
         if (group.type === "FIXED_PRODUCT" && !group.productId) {
@@ -90,7 +90,7 @@ export function serializeComboGroups(groups: ComboGroupFormValue[]) {
         type: group.type,
         label: group.label.trim(),
         ...(group.type === "CATEGORY_CHOICE"
-            ? { categoryId: group.categoryId }
+            ? { categoryIds: group.categoryIds }
             : { productId: group.productId }),
         minQuantity: group.minQuantity,
         ...(group.maxQuantity ? { maxQuantity: Number(group.maxQuantity) } : {}),

@@ -121,7 +121,7 @@ function ComboGroupSection({
         );
     }
 
-    const products = group.category?.products ?? [];
+    const products = group.products ?? [];
 
     return (
         <div>

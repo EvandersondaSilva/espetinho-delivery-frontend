@@ -4,6 +4,7 @@ import { Plus, X } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
     Select,
     SelectContent,
@@ -60,7 +61,7 @@ export function ComboGroupsEditor({
                             onValueChange={(value) =>
                                 onUpdate(index, {
                                     type: value as ComboGroupFormValue["type"],
-                                    categoryId: "",
+                                    categoryIds: [],
                                     productId: "",
                                 })
                             }
@@ -77,22 +78,33 @@ export function ComboGroupsEditor({
 
                     {group.type === "CATEGORY_CHOICE" ? (
                         <div className="grid gap-1.5">
-                            <Label>Categoria</Label>
-                            <Select
-                                value={group.categoryId}
-                                onValueChange={(value) => onUpdate(index, { categoryId: value })}
-                            >
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Selecione uma categoria" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {categories.map((category) => (
-                                        <SelectItem key={category.id} value={category.id}>
+                            <Label>Categorias</Label>
+                            <div className="grid gap-2 max-h-48 overflow-y-auto rounded-lg border border-border p-3">
+                                {categories.map((category) => {
+                                    const checked = group.categoryIds.includes(category.id);
+
+                                    return (
+                                        <label
+                                            key={category.id}
+                                            className="flex items-center gap-2 text-sm"
+                                        >
+                                            <Checkbox
+                                                checked={checked}
+                                                onCheckedChange={(value) =>
+                                                    onUpdate(index, {
+                                                        categoryIds: value
+                                                            ? [...group.categoryIds, category.id]
+                                                            : group.categoryIds.filter(
+                                                                  (id) => id !== category.id
+                                                              ),
+                                                    })
+                                                }
+                                            />
                                             {category.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                        </label>
+                                    );
+                                })}
+                            </div>
                         </div>
                     ) : (
                         <div className="grid gap-1.5">

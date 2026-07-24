@@ -9,7 +9,7 @@ export function isGroupFulfillable(group: ComboGroup): boolean {
         return isProductAvailable(group.product);
     }
 
-    const availableProducts = group.category?.products?.filter(isProductAvailable) ?? [];
+    const availableProducts = group.products?.filter(isProductAvailable) ?? [];
     return availableProducts.length >= group.minQuantity;
 }
 

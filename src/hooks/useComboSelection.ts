@@ -29,7 +29,7 @@ export function useComboSelection(combo: Combo) {
 
     const canIncrement = useCallback(
         (group: ComboGroup, productId: string) => {
-            const product = group.category?.products?.find((p) => p.id === productId);
+            const product = group.products?.find((p) => p.id === productId);
             if (!isProductAvailable(product)) return false;
             return groupTotal(group.id) < group.maxQuantity;
         },
@@ -104,7 +104,7 @@ export function useComboSelection(combo: Combo) {
             const groupQuantities = quantities[group.id] || {};
             Object.entries(groupQuantities).forEach(([productId, quantity]) => {
                 if (quantity <= 0) return;
-                const product = group.category?.products?.find((p) => p.id === productId);
+                const product = group.products?.find((p) => p.id === productId);
                 selections.push({ productId, quantity });
                 displayItems.push({
                     productId,

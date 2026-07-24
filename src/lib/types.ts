@@ -51,8 +51,8 @@ export interface ComboGroup {
     id: string;
     type: ComboGroupType;
     label: string;
-    categoryId: string | null;
-    category: { id: string; name: string; products?: Product[] } | null;
+    categories: { id: string; name: string }[];
+    products?: Product[];
     productId: string | null;
     product: Product | null;
     minQuantity: number;
