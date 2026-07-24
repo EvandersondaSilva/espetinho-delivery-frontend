@@ -11,6 +11,7 @@ export async function createCategoryAction(formData: FormData) {
 
         const token = await getToken();
         const name = formData.get("name") as string;
+        const displayOrder = formData.get("displayOrder") as string;
 
         if (!token) {
             return { success: false, message: "Erro ao criar categoria: Token de autenticação não encontrado." };
@@ -18,6 +19,7 @@ export async function createCategoryAction(formData: FormData) {
 
         const data = {
             name: name,
+            displayOrder: displayOrder?.trim() ? parseInt(displayOrder, 10) : undefined,
         }
 
         await apiClient<Category>("/category", {
@@ -46,6 +48,7 @@ export async function updateCategoryAction(categoryId: string, formData: FormDat
 
         const token = await getToken();
         const name = formData.get("name") as string;
+        const displayOrder = formData.get("displayOrder") as string;
 
         if (!token) {
             return { success: false, message: "Erro ao atualizar categoria: Token de autenticação não encontrado." };
@@ -53,6 +56,7 @@ export async function updateCategoryAction(categoryId: string, formData: FormDat
 
         const data = {
             name: name,
+            displayOrder: displayOrder?.trim() ? parseInt(displayOrder, 10) : undefined,
         }
 
         await apiClient<Category>(`/category/${categoryId}`, {

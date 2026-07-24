@@ -82,6 +82,12 @@ O campo `file` **não é obrigatório**. Se omitido, o produto é criado com `im
 - Aceita `page`, `limit` (máx. 50) e `status` como query params, todos opcionais — sem eles, comportamento equivalente ao anterior (todos os status, primeira página de 20).
 - **Impacto no frontend:** quem fazia `response.data` esperando um array agora precisa usar `response.data.orders`.
 
+### 11. Categoria: ordem de exibição no cardápio (BREAKING na ordenação)
+
+- Categoria agora tem o campo **`displayOrder`** (inteiro ≥ 0, default `0`). `POST /category` e `PUT /category/:id` aceitam `displayOrder` opcional no body.
+- **Antes:** `GET /category` retornava ordenado por `createdAt` desc (mais recente primeiro).
+- **Agora:** ordenado por `displayOrder` asc (menor primeiro); em empate, por `createdAt` asc. Categorias existentes têm `displayOrder: 0` até o admin reordenar.
+
 ---
 
 ## Convenções gerais
@@ -170,11 +176,16 @@ O campo `file` **não é obrigatório**. Se omitido, o produto é criado com `im
 
 ## Categorias
 
-**Objeto categoria:** `{ id, name, createdAt }`
+**Objeto categoria:** `{ id, name, displayOrder, createdAt }`
 
 ### `POST /category` — Criar categoria 🔒 JWT
 
-**Body:** `{ "name": string (mín. 3 caracteres) }`
+**Body:**
+
+| Propriedade | Tipo | Regras |
+|-------------|------|--------|
+| `name` | string | mín. 3 caracteres |
+| `displayOrder` | number | inteiro ≥ 0, opcional (default `0`) — controla a posição de exibição no cardápio |
 
 **Sucesso:** `201` — objeto categoria
 
@@ -184,7 +195,7 @@ O campo `file` **não é obrigatório**. Se omitido, o produto é criado com `im
 
 ### `GET /category` — Listar categorias
 
-Público. **Sucesso:** `200` — array de categorias (ordenado por `createdAt` desc).
+Público. **Sucesso:** `200` — array de categorias ordenado por `displayOrder` asc (menor número primeiro); em caso de empate, por `createdAt` asc.
 
 ---
 
@@ -200,7 +211,7 @@ Público.
 
 ### `PUT /category/:id` — Atualizar categoria 🔒 JWT
 
-**Body:** `{ "name": string (mín. 3 caracteres) }`
+**Body:** igual ao `POST /category` (`name` obrigatório, `displayOrder` opcional).
 
 **Sucesso:** `200` — categoria atualizada.
 

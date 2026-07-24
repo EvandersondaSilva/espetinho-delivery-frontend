@@ -3,6 +3,7 @@ import { apiClient } from "@/lib/api";
 export interface Category {
     id: string;
     name: string;
+    displayOrder: number;
     createdAt: string;
 }
 

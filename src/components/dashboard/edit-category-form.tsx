@@ -27,6 +27,7 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [categoryName, setCategoryName] = useState(category.name);
+    const [displayOrder, setDisplayOrder] = useState(String(category.displayOrder ?? 0));
     const [error, setError] = useState("");
     const router = useRouter();
 
@@ -38,6 +39,7 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
         try {
             const formData = new FormData();
             formData.append("name", categoryName);
+            formData.append("displayOrder", displayOrder);
 
             const result = await updateCategoryAction(category.id, formData);
 
@@ -93,6 +95,26 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
                         />
                     </div>
 
+                    <div>
+                        <Label htmlFor="categoryDisplayOrder" className="mb-2">
+                            Ordem de exibição
+                        </Label>
+                        <Input
+                            id="categoryDisplayOrder"
+                            type="number"
+                            min={0}
+                            step={1}
+                            value={displayOrder}
+                            onChange={(e) => setDisplayOrder(e.target.value)}
+                            placeholder="0"
+                            className="border-border bg-background mt-2"
+                            disabled={loading}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Categorias com número menor aparecem primeiro no cardápio.
+                        </p>
+                    </div>
+
                     {error && (
                         <div className="text-sm text-red-500">
                             {error}
@@ -111,7 +133,11 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
                         <Button
                             type="submit"
                             className="bg-primary text-white hover:bg-primary"
-                            disabled={loading || categoryName === category.name}
+                            disabled={
+                                loading ||
+                                (categoryName === category.name &&
+                                    displayOrder === String(category.displayOrder ?? 0))
+                            }
                         >
                             {loading ? "Atualizando..." : "Atualizar"}
                         </Button>

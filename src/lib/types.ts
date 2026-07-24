@@ -22,6 +22,7 @@ export interface UseAuthReturn {
 export interface Category {
     id: string;
     name: string;
+    displayOrder: number;
     createdAt: string;
 }
 

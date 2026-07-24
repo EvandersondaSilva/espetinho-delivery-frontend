@@ -62,6 +62,25 @@ export default function CategoryForm() {
                             className="border-border bg-background mt-4"
                         />
                     </div>
+
+                    <div className="mt-4">
+                        <Label htmlFor="categoryDisplayOrder" className="mb-2">
+                            Ordem de exibição
+                        </Label>
+                        <Input
+                            id="categoryDisplayOrder"
+                            name="displayOrder"
+                            type="number"
+                            min={0}
+                            step={1}
+                            placeholder="0"
+                            className="border-border bg-background"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Categorias com número menor aparecem primeiro no cardápio.
+                        </p>
+                    </div>
+
                     <Button type="submit" className="w-full bg-primary text-white hover:bg-primary mt-4">
                         Criar categoria
                     </Button>

@@ -59,7 +59,8 @@ export default function CategoryCard({ category }: CategoryCardProps) {
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="flex-1 flex flex-col">
-                    <p className="text-gray-500 text-xs mb-4">{category.id}</p>
+                    <p className="text-gray-500 text-xs">{category.id}</p>
+                    <p className="text-gray-500 text-xs mb-4">Ordem: {category.displayOrder ?? 0}</p>
                     <div className="mt-auto space-y-2">
                         <div className="flex gap-2">
                             <EditCategoryForm category={category} />
