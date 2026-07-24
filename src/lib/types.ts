@@ -117,6 +117,7 @@ export interface Order {
     paymentMethod: string | null;
     changeFor: number | null;
     noChangeNeeded: boolean;
+    autoPrinted: boolean;
     createdAt: string;
     items: OrderItem[];
     combos: OrderCombo[];

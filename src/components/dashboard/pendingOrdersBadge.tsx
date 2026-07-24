@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Bell } from "lucide-react";
-import { getActiveOrders } from "@/services/order";
+import { getActiveOrders, Order } from "@/services/order";
+import { printOrderReceipt } from "@/services/qzPrint";
+import { markOrderPrintedAction } from "@/actions/orders";
 
 const POLL_INTERVAL_MS = 30_000;
 
@@ -11,8 +13,32 @@ interface PendingOrdersBadgeProps {
     token: string | null;
 }
 
+async function processAutoPrints(orders: Order[], printingIds: Set<string>) {
+    const toPrint = orders.filter(
+        (order) => order.status === "RECEBIDO" && !order.autoPrinted && !printingIds.has(order.id)
+    );
+
+    for (const order of toPrint) {
+        printingIds.add(order.id);
+
+        try {
+            await printOrderReceipt(order);
+
+            const result = await markOrderPrintedAction(order.id);
+            if (!result.success) {
+                console.error("Falha ao marcar pedido como impresso:", order.id, result.message);
+            }
+        } catch (error) {
+            console.error("Falha ao imprimir pedido automaticamente:", order.id, error);
+        } finally {
+            printingIds.delete(order.id);
+        }
+    }
+}
+
 export function PendingOrdersBadge({ token }: PendingOrdersBadgeProps) {
     const [pendingCount, setPendingCount] = useState(0);
+    const printingIdsRef = useRef<Set<string>>(new Set());
 
     const fetchPendingCount = useCallback(async () => {
         if (!token) return;
@@ -21,6 +47,8 @@ export function PendingOrdersBadge({ token }: PendingOrdersBadgeProps) {
             const orders = await getActiveOrders(token);
 
             setPendingCount(orders.length);
+
+            void processAutoPrints(orders, printingIdsRef.current);
         } catch {
             // Polling silencioso: não deve interromper a navegação do admin.
         }

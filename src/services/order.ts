@@ -33,6 +33,25 @@ export interface OrderItem {
   };
 }
 
+export interface OrderComboItem {
+  id: string;
+  productId: string;
+  quantity: number;
+  product: {
+    id: string;
+    name: string;
+    imageUrl: string | null;
+  };
+}
+
+export interface OrderCombo {
+  id: string;
+  comboId: string;
+  price: number;
+  combo: { id: string; name: string; imageUrl: string | null };
+  items: OrderComboItem[];
+}
+
 export type OrderStatus = "RECEBIDO" | "PREPARANDO" | "SAIU" | "ENTREGUE";
 
 const ACTIVE_ORDER_STATUSES: OrderStatus[] = ["RECEBIDO", "PREPARANDO", "SAIU"];
@@ -45,8 +64,13 @@ export interface Order {
   deliveryFee: number;
   total: number;
   status: OrderStatus;
+  paymentMethod: string | null;
+  changeFor: number | null;
+  noChangeNeeded: boolean;
+  autoPrinted: boolean;
   createdAt: string;
   items: OrderItem[];
+  combos: OrderCombo[];
 }
 
 export async function createOrder(input: CreateOrderInput): Promise<Order> {
