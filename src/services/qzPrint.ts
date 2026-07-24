@@ -18,6 +18,14 @@ const PAPER_CUT = { type: "raw" as const, format: "command" as const, flavor: "h
 // 6 linhas (~21mm) cobrem o offset da POS-80 com folga.
 const FEED_BEFORE_CUT = "\n".repeat(6);
 
+// O toLocaleString("pt-BR") do formatBRLFromCents separa "R$" do valor com um
+// espaço não-quebrável (U+00A0). A impressora manda esse byte como 0xA0, que na
+// codepage CP437 dela é "á" — saía "R$á5,00". Troca por espaço comum só aqui;
+// no HTML e no WhatsApp o não-quebrável é desejado (não separa R$ do valor).
+function toPrinterCharset(text: string): string {
+    return text.replace(/[  ]/g, " ");
+}
+
 function centerText(text: string, width: number): string {
     const leftPad = Math.max(Math.floor((width - text.length) / 2), 0);
     return " ".repeat(leftPad) + text;
@@ -77,7 +85,7 @@ function buildPlainTextReceipt(order: ReceiptOrderInput): string {
     lines.push(centerText("Obrigado pela compra!", RECEIPT_WIDTH));
     lines.push(separator);
 
-    return lines.join("\n") + FEED_BEFORE_CUT;
+    return toPrinterCharset(lines.join("\n")) + FEED_BEFORE_CUT;
 }
 
 let connectPromise: Promise<void> | null = null;
