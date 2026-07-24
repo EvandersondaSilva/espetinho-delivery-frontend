@@ -18,12 +18,28 @@ const PAPER_CUT = { type: "raw" as const, format: "command" as const, flavor: "h
 // 6 linhas (~21mm) cobrem o offset da POS-80 com folga.
 const FEED_BEFORE_CUT = "\n".repeat(6);
 
-// O toLocaleString("pt-BR") do formatBRLFromCents separa "R$" do valor com um
-// espaço não-quebrável (U+00A0). A impressora manda esse byte como 0xA0, que na
-// codepage CP437 dela é "á" — saía "R$á5,00". Troca por espaço comum só aqui;
-// no HTML e no WhatsApp o não-quebrável é desejado (não separa R$ do valor).
+// QZ Tray manda cada caractere como 1 byte cru com o valor do código Unicode, e
+// a impressora interpreta esses bytes na codepage CP437 (padrão de fábrica de
+// impressoras ESC/POS) — que não tem acentos portugueses nem "•": no lugar tem
+// símbolos gregos e de desenho de caixa (ex.: "ç" virava "τ", "ã" virava "π").
+// Em vez de mapear a codepage manualmente (frágil, depende do firmware exato),
+// remove os acentos e normaliza a pontuação não-ASCII só nesse caminho — no
+// HTML e no WhatsApp os acentos continuam intactos; aqui perdem-se de
+// propósito pra garantir impressão correta em qualquer impressora ESC/POS.
+// Construído por código numérico (não como caractere literal na regex) porque
+// espaços invisíveis (NBSP, espaço fino) são frágeis de embutir direto no
+// código-fonte — editores/ferramentas tendem a "achatar" pra espaço comum
+// silenciosamente, o que reintroduziria o bug do "R$á5,00".
+const NBSP_LIKE_REGEX = new RegExp(`[${String.fromCharCode(0x00a0, 0x202f)}]`, "g");
+
 function toPrinterCharset(text: string): string {
-    return text.replace(/[  ]/g, " ");
+    return text
+        .normalize("NFD")
+        .replace(/\p{Mn}/gu, "") // remove os acentos (marcas diacríticas deixadas pelo NFD)
+        .replace(NBSP_LIKE_REGEX, " ") // espaço não-quebrável/fino -> espaço comum
+        .replace(/[•·]/g, "-") // "•" (separador de endereço) e "·" -> hífen
+        .replace(/[–—]/g, "-") // travessão/en dash -> hífen
+        .replace(/[^\x00-\x7F]/g, "?"); // qualquer outro caractere fora do ASCII -> "?" (nunca vira símbolo aleatório)
 }
 
 function centerText(text: string, width: number): string {
