@@ -122,6 +122,16 @@ Mesma correção de modelagem da mudança #13, agora aplicada a `FIXED_PRODUCT`:
 - `POST /order` passa a **rejeitar com `422`** (`Pedido mínimo de R$ X,XX não atingido`) quando a soma dos itens + combos (sem contar `deliveryFee`) ficar abaixo de `Settings.minOrderValue`. A checagem acontece depois da validação de itens/combos e antes de criar o pedido.
 - Não quebra nada existente: campo novo com default, rota nova, checagem adicional no fluxo de criação de pedido.
 
+### 16. `POST /order-item` e `DELETE /order-item/:id` reescritas — corrige total quebrado com combos e adiciona travas (BREAKING no comportamento)
+
+Essas duas rotas existiam desde antes dos combos e nunca tinham sido atualizadas. Reescritas do zero (mesma assinatura de rota/body, comportamento interno corrigido):
+
+- **Bug corrigido — `total` ignorava combos:** o recálculo de `total` somava só `OrderItem`, então adicionar/remover um item avulso de um pedido que também tinha combo **apagava o valor do combo** do total salvo. Agora soma `OrderItem` + `OrderCombo.price` + `deliveryFee`, mesmo padrão de `POST /order`.
+- **Novo bloqueio de status:** pedidos `ENTREGUE` não podem mais ser editados por essas rotas → `422` `Pedido já entregue não pode ser editado`.
+- **Novo ajuste de estoque bidirecional:** se o pedido já passou por `PREPARANDO` (`stockDeducted: true`), adicionar item agora **baixa** o estoque na hora (rejeitando com `422` `Estoque insuficiente para o produto {nome}` se não houver saldo, e marcando `available: false` se zerar) e remover item agora **devolve** o estoque na hora. Se o pedido ainda não passou por `PREPARANDO`, nada muda no estoque — a baixa geral continua acontecendo normalmente na transição de status.
+- Escopo permanece limitado a produtos avulsos (`OrderItem`) — produtos dentro de combos (`OrderCombo`/`OrderComboItem`) não são afetados por essas rotas.
+- Sem consumidores no frontend hoje — nenhuma tela chama essas rotas atualmente, então a correção não tem impacto de regressão visível.
+
 ---
 
 ## Convenções gerais
@@ -665,13 +675,19 @@ Cada combo: `{ comboId: string, selections: [{ productId: string, quantity: numb
 
 > **Mudança:** agora exige autenticação.
 
+Escopo limitado a produtos avulsos (`OrderItem`) — não se aplica a produtos dentro de combos (`OrderCombo`/`OrderComboItem`).
+
 **Body (JSON):** `{ orderId: string, productId: string, quantity: number (≥ 1) }`
 
-**Comportamento:** se já existir item com o mesmo `productId`, a quantidade é **somada**. O `total` do pedido é recalculado.
+**Comportamento:**
+- Se já existir item com o mesmo `productId`, a quantidade é **somada**; senão, cria um novo item com o preço atual do produto (snapshot).
+- **Bloqueio de status:** pedidos com status `ENTREGUE` não podem ser editados → `422`.
+- **`total` recalculado corretamente:** soma `OrderItem` (preço congelado × quantidade) + `OrderCombo.price` (preço fixo de cada combo do pedido) + `deliveryFee`. *(Antes dessa correção, o recálculo considerava só os `OrderItem`, corrompendo o `total` de pedidos que também tinham combo — corrigido.)*
+- **Ajuste de estoque bidirecional:** se o pedido **já teve estoque baixado** (`stockDeducted: true`, ou seja, já passou por `PREPARANDO`), o estoque do produto adicionado é baixado **na hora**, na quantidade recém-adicionada — com a mesma checagem de suficiência de `PATCH /order/:id/status` (rejeita com `422` se não houver estoque) e a mesma regra de marcar `available: false` se o estoque zerar. Se o pedido **ainda não** teve estoque baixado (`stockDeducted: false`), nada é alterado no estoque agora — a baixa geral acontece normalmente quando o status for para `PREPARANDO`, já considerando o item atualizado.
 
 **Sucesso:** `201` — pedido completo atualizado.
 
-**Erros:** `404` `Pedido não encontrado` · `404` `Produto não encontrado` · `422` `Produto indisponível` · `500` `Falha ao adicionar item ao pedido`
+**Erros:** `404` `Pedido não encontrado` · `422` `Pedido já entregue não pode ser editado` · `404` `Produto não encontrado` · `422` `Produto indisponível` · `422` `Estoque insuficiente para o produto {nome}` (só quando `stockDeducted: true`) · `500` `Falha ao adicionar item ao pedido`
 
 ---
 
@@ -679,11 +695,18 @@ Cada combo: `{ comboId: string, selections: [{ productId: string, quantity: numb
 
 > **Mudança:** agora exige autenticação.
 
+Escopo limitado a produtos avulsos (`OrderItem`) — não se aplica a produtos dentro de combos.
+
 **Parâmetro:** `id` — id do **OrderItem**.
+
+**Comportamento:**
+- **Bloqueio de status:** pedidos com status `ENTREGUE` não podem ser editados → `422`.
+- **`total` recalculado corretamente:** mesma fórmula do `POST /order-item` (`OrderItem` + `OrderCombo.price` + `deliveryFee`).
+- **Ajuste de estoque bidirecional:** se `stockDeducted: true`, o estoque do produto removido é **devolvido** (incrementado) na hora, na quantidade do item removido. Isso **não** reativa `available` automaticamente se o produto estava desabilitado por estoque zerado — reativar disponibilidade continua sendo uma ação manual do admin (`PATCH /product/:id/enable`). Se `stockDeducted: false`, nada é alterado no estoque.
 
 **Sucesso:** `200` — pedido completo após recalcular `total`.
 
-**Erros:** `404` `Item do pedido não encontrado` · `404` `Pedido não encontrado` · `500` `Falha ao remover item do pedido`
+**Erros:** `404` `Item do pedido não encontrado` · `404` `Pedido não encontrado` · `422` `Pedido já entregue não pode ser editado` · `500` `Falha ao remover item do pedido`
 
 ---
 

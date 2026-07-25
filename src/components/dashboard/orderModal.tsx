@@ -11,9 +11,19 @@ import {
     DialogDescription
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { formatBRLFromCents, getChangeDue } from "@/lib/currency";
-import { CheckCircle2, Circle, Clock, Truck, Printer } from "lucide-react";
-import { updateOrderStatusAction } from "@/actions/orders";
+import { CheckCircle2, Circle, Clock, Truck, Printer, Trash2, Plus } from "lucide-react";
+import { updateOrderStatusAction, addOrderItemAction, deleteOrderItemAction } from "@/actions/orders";
+import { useProducts } from "@/hooks/useProducts";
+import { showError } from "@/lib/toast";
 import { OrderReceipt } from "./OrderReceipt";
 
 
@@ -28,6 +38,12 @@ export function OrderModal({ orderId, onClose, token }: OrderModalProps) {
     const [order, setOrder] = useState<Order | null>(null);
     const [loading, setLoading] = useState(false);
     const [finishingOrder, setFinishingOrder] = useState(false);
+    const [mutating, setMutating] = useState(false);
+    const [newProductId, setNewProductId] = useState("");
+    const [newQuantity, setNewQuantity] = useState("1");
+
+    const isEditable = order ? order.status !== "ENTREGUE" : false;
+    const { products } = useProducts(isEditable);
 
     const fetchOrder = async () => {
         if (!orderId) {
@@ -149,6 +165,56 @@ export function OrderModal({ orderId, onClose, token }: OrderModalProps) {
         }
     };
 
+    /**
+     * Remove um item avulso do pedido (DELETE /order-item/:id)
+     */
+    const handleRemoveItem = async (orderItemId: string) => {
+        setMutating(true);
+
+        try {
+            const result = await deleteOrderItemAction(orderItemId);
+
+            if (result.success && result.data) {
+                setOrder(result.data);
+            } else {
+                showError(result.message);
+            }
+        } catch (error) {
+            showError("Erro ao remover item do pedido.");
+        } finally {
+            setMutating(false);
+        }
+    };
+
+    /**
+     * Adiciona um produto ao pedido (POST /order-item); soma a quantidade
+     * se o produto já estiver no pedido (comportamento do backend)
+     */
+    const handleAddItem = async () => {
+        if (!order || !newProductId) return;
+
+        const quantity = Number(newQuantity);
+        if (!quantity || quantity < 1) return;
+
+        setMutating(true);
+
+        try {
+            const result = await addOrderItemAction(order.id, newProductId, quantity);
+
+            if (result.success && result.data) {
+                setOrder(result.data);
+                setNewProductId("");
+                setNewQuantity("1");
+            } else {
+                showError(result.message);
+            }
+        } catch (error) {
+            showError("Erro ao adicionar item ao pedido.");
+        } finally {
+            setMutating(false);
+        }
+    };
+
     const formatDate = (dateString: string): string => {
         const date = new Date(dateString);
         return date.toLocaleDateString("pt-BR", {
@@ -251,9 +317,56 @@ export function OrderModal({ orderId, onClose, token }: OrderModalProps) {
                                                 {formatBRLFromCents(item.price)} un
                                             </p>
                                         </div>
+                                        {isEditable && (
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="text-destructive hover:bg-destructive/10"
+                                                disabled={mutating}
+                                                onClick={() => handleRemoveItem(item.id)}
+                                                aria-label={`Remover ${item.product.name}`}
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </Button>
+                                        )}
                                     </div>
                                 ))}
                             </div>
+
+                            {isEditable && (
+                                <div className="flex items-center gap-2 rounded-lg border border-dashed p-3">
+                                    <Select value={newProductId} onValueChange={setNewProductId}>
+                                        <SelectTrigger className="flex-1" disabled={mutating}>
+                                            <SelectValue placeholder="Selecione um produto" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {products.map((product) => (
+                                                <SelectItem key={product.id} value={product.id}>
+                                                    {product.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <Input
+                                        type="number"
+                                        min={1}
+                                        step={1}
+                                        value={newQuantity}
+                                        onChange={(e) => setNewQuantity(e.target.value)}
+                                        disabled={mutating}
+                                        className="w-20 shrink-0"
+                                    />
+                                    <Button
+                                        variant="outline"
+                                        disabled={mutating || !newProductId}
+                                        onClick={handleAddItem}
+                                        className="shrink-0 gap-2"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                        Adicionar
+                                    </Button>
+                                </div>
+                            )}
                         </div>
 
                         {/* Resumo do Pedido */}
