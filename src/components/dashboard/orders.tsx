@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
-import { formatBRLFromCents } from "@/lib/currency";
+import { formatBRLFromCents, getChangeDue } from "@/lib/currency";
 import { EyeIcon } from "lucide-react";
 import { OrderModal } from "./orderModal";
 import { cn } from "@/lib/utils";
@@ -151,45 +151,54 @@ export function Orders({ token }: OrdersProps) {
                         <p className="text-center text-gray-300">Nenhum pedido encontrado.</p>
                     ) : (
                         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                            {orders.map((order) => (
-                                <Card key={order.id} className="bg-card border-card">
-                                    <CardHeader>
-                                        <div className="flex items-center justify-between gap-2">
-                                            <CardTitle className="text-lg lg:text-xl font-bold">
-                                                Pedido #{order.id.slice(0, 8)}
-                                            </CardTitle>
-                                            <Badge variant="outline" className="text-xs select-none">
-                                                {STATUS_LABELS[order.status]}
-                                            </Badge>
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent className="space-y-3 sm:space-y-4 mt-auto">
-                                        <div>
-                                            {order.items && order.items.length > 0 && (
-                                                <div className="space-y-1">
-                                                    {order.items.slice(0, 2).map((item) => (
-                                                        <p key={item.id} className="text-xs sm:text-sm text-gray-600 truncate">
-                                                            - {item.quantity}x {item.product.name}
-                                                        </p>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
+                            {orders.map((order) => {
+                                const changeDue = getChangeDue(order);
 
-                                        <div className="flex flex-col xl:flex-row items-center justify-between pt-4 border-t border-app-border gap-3">
-                                            <div className="self-start">
-                                                <p className="text-sm text-gray-500 md:text-base">Total</p>
-                                                <p className="text-base font-bold "> {formatBRLFromCents(order.total)} </p>
+                                return (
+                                    <Card key={order.id} className="bg-card border-card">
+                                        <CardHeader>
+                                            <div className="flex items-center justify-between gap-2">
+                                                <CardTitle className="text-lg lg:text-xl font-bold">
+                                                    Pedido #{order.id.slice(0, 8)}
+                                                </CardTitle>
+                                                <Badge variant="outline" className="text-xs select-none">
+                                                    {STATUS_LABELS[order.status]}
+                                                </Badge>
                                             </div>
-                                            <Button size="sm"
-                                                className="hover:bg-primary/90 w-full  xl:w-auto" onClick={() => setSelectedOrder(order.id)}>
-                                                <EyeIcon className="w-4 h-4 mr-1" />
-                                                Detalhes
-                                            </Button>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
+                                        </CardHeader>
+                                        <CardContent className="space-y-3 sm:space-y-4 mt-auto">
+                                            <div>
+                                                {order.items && order.items.length > 0 && (
+                                                    <div className="space-y-1">
+                                                        {order.items.slice(0, 2).map((item) => (
+                                                            <p key={item.id} className="text-xs sm:text-sm text-gray-600 truncate">
+                                                                - {item.quantity}x {item.product.name}
+                                                            </p>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="flex flex-col xl:flex-row items-center justify-between pt-4 border-t border-app-border gap-3">
+                                                <div className="self-start">
+                                                    <p className="text-sm text-gray-500 md:text-base">Total</p>
+                                                    <p className="text-base font-bold "> {formatBRLFromCents(order.total)} </p>
+                                                    {changeDue.status === "due" && (
+                                                        <Badge className="mt-1 border-amber-200 bg-amber-50 text-amber-900">
+                                                            Troco: {formatBRLFromCents(changeDue.amountCents)}
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                                <Button size="sm"
+                                                    className="hover:bg-primary/90 w-full  xl:w-auto" onClick={() => setSelectedOrder(order.id)}>
+                                                    <EyeIcon className="w-4 h-4 mr-1" />
+                                                    Detalhes
+                                                </Button>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                );
+                            })}
                         </div>
                     )}
 

@@ -24,3 +24,27 @@ export function maskBRLInput(value: string): string {
   return formatBRLFromCents(parseBRLToCents(digits));
 }
 
+export type ChangeDueResult =
+  | { status: "not-applicable" }
+  | { status: "no-change-needed" }
+  | { status: "invalid" }
+  | { status: "due"; amountCents: number };
+
+/**
+ * Calcula o troco a devolver (changeFor - total) num pedido em dinheiro.
+ * Nunca retorna um valor negativo: se changeFor estiver ausente ou for
+ * menor que o total (situação inconsistente), o status vira "invalid".
+ */
+export function getChangeDue(order: {
+  paymentMethod: string | null;
+  changeFor: number | null;
+  noChangeNeeded: boolean;
+  total: number;
+}): ChangeDueResult {
+  if (order.paymentMethod !== "dinheiro") return { status: "not-applicable" };
+  if (order.noChangeNeeded) return { status: "no-change-needed" };
+  if (order.changeFor == null || order.changeFor < order.total) return { status: "invalid" };
+
+  return { status: "due", amountCents: order.changeFor - order.total };
+}
+

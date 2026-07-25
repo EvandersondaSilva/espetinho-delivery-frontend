@@ -11,7 +11,7 @@ import {
     DialogDescription
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { formatBRLFromCents } from "@/lib/currency";
+import { formatBRLFromCents, getChangeDue } from "@/lib/currency";
 import { CheckCircle2, Circle, Clock, Truck, Printer } from "lucide-react";
 import { updateOrderStatusAction } from "@/actions/orders";
 import { OrderReceipt } from "./OrderReceipt";
@@ -277,6 +277,38 @@ export function OrderModal({ orderId, onClose, token }: OrderModalProps) {
                                 <span>{formatBRLFromCents(order.total)}</span>
                             </div>
                         </div>
+
+                        {/* Troco (só relevante pra pagamento em dinheiro) */}
+                        {(() => {
+                            const changeDue = getChangeDue(order);
+
+                            if (changeDue.status === "due") {
+                                return (
+                                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 flex justify-between items-center">
+                                        <span className="font-medium text-amber-900">Troco a devolver</span>
+                                        <span className="text-lg font-bold text-amber-900">
+                                            {formatBRLFromCents(changeDue.amountCents)}
+                                        </span>
+                                    </div>
+                                );
+                            }
+
+                            if (changeDue.status === "no-change-needed") {
+                                return (
+                                    <p className="text-sm text-muted-foreground">Sem troco necessário</p>
+                                );
+                            }
+
+                            if (changeDue.status === "invalid") {
+                                return (
+                                    <p className="text-sm text-destructive">
+                                        Troco não informado corretamente
+                                    </p>
+                                );
+                            }
+
+                            return null;
+                        })()}
                     </div>
 
                     <OrderReceipt order={order} />
