@@ -13,6 +13,7 @@ export interface ComboGroupFormValue {
     label: string;
     categoryIds: string[];
     fixedItems: ComboGroupFixedItemFormValue[];
+    productIds: string[];
     minQuantity: number;
     /** string para permitir campo vazio; "" = deixa o backend usar minQuantity como default */
     maxQuantity: string;
@@ -23,6 +24,7 @@ const EMPTY_GROUP: ComboGroupFormValue = {
     label: "",
     categoryIds: [],
     fixedItems: [],
+    productIds: [],
     minQuantity: 1,
     maxQuantity: "",
 };
@@ -82,7 +84,11 @@ export function validateComboGroups(groups: ComboGroupFormValue[]): string | nul
             }
         }
 
-        if (group.type === "CATEGORY_CHOICE") {
+        if (group.type === "PRODUCT_CHOICE" && group.productIds.length < 2) {
+            return 'Selecione pelo menos 2 produtos em todos os grupos do tipo "Escolha entre produtos específicos".';
+        }
+
+        if (group.type === "CATEGORY_CHOICE" || group.type === "PRODUCT_CHOICE") {
             if (!group.minQuantity || group.minQuantity < 1) {
                 return "A quantidade mínima de cada grupo deve ser pelo menos 1.";
             }
@@ -110,6 +116,12 @@ export function serializeComboGroups(groups: ComboGroupFormValue[]) {
                 minQuantity: group.minQuantity,
                 ...(group.maxQuantity ? { maxQuantity: Number(group.maxQuantity) } : {}),
             }
-            : { fixedItems: group.fixedItems }),
+            : group.type === "PRODUCT_CHOICE"
+                ? {
+                    productIds: group.productIds,
+                    minQuantity: group.minQuantity,
+                    ...(group.maxQuantity ? { maxQuantity: Number(group.maxQuantity) } : {}),
+                }
+                : { fixedItems: group.fixedItems }),
     }));
 }

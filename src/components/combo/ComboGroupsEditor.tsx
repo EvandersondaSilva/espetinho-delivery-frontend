@@ -63,6 +63,7 @@ export function ComboGroupsEditor({
                                     type: value as ComboGroupFormValue["type"],
                                     categoryIds: [],
                                     fixedItems: [],
+                                    productIds: [],
                                 })
                             }
                         >
@@ -71,12 +72,13 @@ export function ComboGroupsEditor({
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="CATEGORY_CHOICE">Escolha por categoria</SelectItem>
+                                <SelectItem value="PRODUCT_CHOICE">Escolha entre produtos específicos</SelectItem>
                                 <SelectItem value="FIXED_PRODUCT">Produto fixo</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
 
-                    {group.type === "CATEGORY_CHOICE" ? (
+                    {group.type === "CATEGORY_CHOICE" && (
                         <div className="grid gap-1.5">
                             <Label>Categorias</Label>
                             <div className="grid gap-2 max-h-48 overflow-y-auto rounded-lg border border-border p-3">
@@ -106,7 +108,44 @@ export function ComboGroupsEditor({
                                 })}
                             </div>
                         </div>
-                    ) : (
+                    )}
+
+                    {group.type === "PRODUCT_CHOICE" && (
+                        <div className="grid gap-1.5">
+                            <Label>Produtos</Label>
+                            <div className="grid gap-2 max-h-48 overflow-y-auto rounded-lg border border-border p-3">
+                                {products.map((product) => {
+                                    const checked = group.productIds.includes(product.id);
+
+                                    return (
+                                        <label
+                                            key={product.id}
+                                            className="flex items-center gap-2 text-sm"
+                                        >
+                                            <Checkbox
+                                                checked={checked}
+                                                onCheckedChange={(value) =>
+                                                    onUpdate(index, {
+                                                        productIds: value
+                                                            ? [...group.productIds, product.id]
+                                                            : group.productIds.filter(
+                                                                  (id) => id !== product.id
+                                                              ),
+                                                    })
+                                                }
+                                            />
+                                            {product.name}
+                                        </label>
+                                    );
+                                })}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                Selecione pelo menos 2 produtos.
+                            </p>
+                        </div>
+                    )}
+
+                    {group.type === "FIXED_PRODUCT" && (
                         <div className="grid gap-1.5">
                             <Label>Produtos fixos</Label>
                             <div className="space-y-2">
@@ -194,7 +233,7 @@ export function ComboGroupsEditor({
                         />
                     </div>
 
-                    {group.type === "CATEGORY_CHOICE" ? (
+                    {group.type === "CATEGORY_CHOICE" || group.type === "PRODUCT_CHOICE" ? (
                         <div className="grid grid-cols-2 gap-3">
                             <div className="grid gap-1.5">
                                 <Label>Quantidade mínima</Label>

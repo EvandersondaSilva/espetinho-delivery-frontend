@@ -46,7 +46,7 @@ export interface Product {
     createdAt: string;
 }
 
-export type ComboGroupType = "CATEGORY_CHOICE" | "FIXED_PRODUCT";
+export type ComboGroupType = "CATEGORY_CHOICE" | "FIXED_PRODUCT" | "PRODUCT_CHOICE";
 
 export interface ComboGroup {
     id: string;
@@ -55,6 +55,7 @@ export interface ComboGroup {
     categories: { id: string; name: string }[];
     products?: Product[];
     fixedItems: (Product & { quantity: number })[];
+    choiceProducts: { productId: string; product: Product }[];
     minQuantity: number;
     maxQuantity: number;
 }
