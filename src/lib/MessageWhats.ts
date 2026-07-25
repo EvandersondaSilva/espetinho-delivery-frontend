@@ -81,9 +81,12 @@ export function generateWhatsAppMessage({
         DELIVERY_NEIGHBORHOODS.find((n) => n.value === neighborhood)?.label ||
         neighborhood;
 
-    const fullAddress = [street, neighborhoodLabel, complement]
-        .filter((part) => part.trim())
-        .join(" • ");
+    const fullAddress =
+        deliveryType === "pickup"
+            ? deliveryTypeLabel
+            : [street, neighborhoodLabel, complement]
+                .filter((part) => part.trim())
+                .join(" • ");
 
     const orderNumber = `pedido #${orderId.slice(0, 8)}`;
 

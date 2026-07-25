@@ -6,7 +6,7 @@ import { getStoreSettings } from "@/services/settings";
 import { showError } from "@/lib/toast";
 import { generateWhatsAppMessage } from "@/lib/MessageWhats";
 import { parseBRLToCents } from "@/lib/currency";
-import { DELIVERY_NEIGHBORHOODS } from "@/lib/constants";
+import { DELIVERY_NEIGHBORHOODS, DELIVERY_OPTIONS } from "@/lib/constants";
 import { CartCombo } from "@/context/cartContext";
 
 interface CheckoutParams {
@@ -65,9 +65,17 @@ export function useCheckout() {
         const phoneValue = phone.trim();
         const streetValue = street.trim();
         const neighborhoodValue = neighborhood.trim();
+        const isPickup = deliveryType === "pickup";
 
-        if (!name || !phoneValue || !streetValue || !neighborhoodValue) {
-            const msg = "Preencha nome, telefone, rua e bairro para finalizar.";
+        if (!name || !phoneValue) {
+            const msg = "Preencha nome e telefone para finalizar.";
+            setError(msg);
+            showError(msg);
+            return;
+        }
+
+        if (!isPickup && (!streetValue || !neighborhoodValue)) {
+            const msg = "Preencha rua e bairro para finalizar, ou escolha retirar no balcão.";
             setError(msg);
             showError(msg);
             return;
@@ -98,9 +106,14 @@ export function useCheckout() {
                 DELIVERY_NEIGHBORHOODS.find((n) => n.value === neighborhoodValue)?.label ||
                 neighborhoodValue;
 
-            const fullAddress = [streetValue, neighborhoodLabel, complement.trim()]
-                .filter((part) => part)
-                .join(" • ");
+            const pickupLabel =
+                DELIVERY_OPTIONS.find((d) => d.value === "pickup")?.label || "Retirada no balcão";
+
+            const fullAddress = isPickup
+                ? pickupLabel
+                : [streetValue, neighborhoodLabel, complement.trim()]
+                    .filter((part) => part)
+                    .join(" • ");
 
             const order = await createOrder({
                 customerName: name,

@@ -60,11 +60,11 @@ export const CartContent = memo(function CartContent({
         if (loading) return true;
         if (items.length === 0 && combos.length === 0) return true;
 
+        if (!form.customerName.trim() || !form.phone.trim()) return true;
+
         if (
-            !form.customerName.trim() ||
-            !form.phone.trim() ||
-            !form.street.trim() ||
-            !form.neighborhood.trim()
+            form.deliveryType === "delivery" &&
+            (!form.street.trim() || !form.neighborhood.trim())
         )
             return true;
 

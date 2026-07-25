@@ -154,44 +154,49 @@ export const CartCheckoutForm = memo(function CartCheckoutForm({
           </Select>
         </div>
 
-        {/* Campo: Rua e Número */}
-        <div className="grid gap-1.5">
-          <Label htmlFor="street">Endereço</Label>
-          <Input
-            id="street"
-            value={street}
-            onChange={(e) => onStreetChange(e.target.value)}
-            placeholder="Rua X, número 123"
-          />
-        </div>
+        {/* Campos de endereço: só fazem sentido pra delivery, retirada no balcão não precisa */}
+        {deliveryType === "delivery" && (
+          <>
+            {/* Campo: Rua e Número */}
+            <div className="grid gap-1.5">
+              <Label htmlFor="street">Endereço</Label>
+              <Input
+                id="street"
+                value={street}
+                onChange={(e) => onStreetChange(e.target.value)}
+                placeholder="Rua X, número 123"
+              />
+            </div>
 
-        {/* Campo: Bairro */}
-        <div className="grid gap-1.5">
-          <Label htmlFor="neighborhood">Bairro</Label>
-          <Select value={neighborhood} onValueChange={onNeighborhoodChange}>
-            <SelectTrigger id="neighborhood" className="w-full">
-              <SelectValue placeholder="Selecione o bairro" />
-            </SelectTrigger>
-            <SelectContent>
-              {DELIVERY_NEIGHBORHOODS.map((neighborhoodOption) => (
-                <SelectItem key={neighborhoodOption.value} value={neighborhoodOption.value}>
-                  {neighborhoodOption.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+            {/* Campo: Bairro */}
+            <div className="grid gap-1.5">
+              <Label htmlFor="neighborhood">Bairro</Label>
+              <Select value={neighborhood} onValueChange={onNeighborhoodChange}>
+                <SelectTrigger id="neighborhood" className="w-full">
+                  <SelectValue placeholder="Selecione o bairro" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DELIVERY_NEIGHBORHOODS.map((neighborhoodOption) => (
+                    <SelectItem key={neighborhoodOption.value} value={neighborhoodOption.value}>
+                      {neighborhoodOption.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        {/* Campo: Complemento */}
-        <div className="grid gap-1.5">
-          <Label htmlFor="complement">Complemento</Label>
-          <Textarea
-            id="complement"
-            value={complement}
-            onChange={(e) => onComplementChange(e.target.value)}
-            placeholder="Apto, bloco, referência, etc (opcional)"
-          />
-        </div>
+            {/* Campo: Complemento */}
+            <div className="grid gap-1.5">
+              <Label htmlFor="complement">Complemento</Label>
+              <Textarea
+                id="complement"
+                value={complement}
+                onChange={(e) => onComplementChange(e.target.value)}
+                placeholder="Apto, bloco, referência, etc (opcional)"
+              />
+            </div>
+          </>
+        )}
 
         {/* Mensagem de erro */}
         {error && (
