@@ -7,7 +7,6 @@ import { useState, useEffect } from "react";
 
 import { CartSheet } from "@/components/cartContent/cartSheet";
 import { PendingOrdersBadge } from "@/components/dashboard/pendingOrdersBadge";
-import { StoreStatusToggle } from "@/components/header/StoreStatusToggle";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -96,7 +95,6 @@ export function SiteHeader({ token }: SiteHeaderProps) {
       <div className="flex items-center gap-2">
         {isAdminRoute ? (
           <>
-            <StoreStatusToggle token={token} />
             <PendingOrdersBadge token={token} />
           </>
         ) : (

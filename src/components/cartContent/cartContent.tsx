@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, memo, useState } from "react";
+import { useMemo, memo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 
@@ -14,6 +14,8 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/context/cartContext";
+import { getStoreSettings } from "@/services/settings";
+import { formatBRLFromCents } from "@/lib/currency";
 
 import { CartItemsList } from "./CartItemsList";
 import { CartComboList } from "./CartComboList";
@@ -21,6 +23,7 @@ import { CartTotal } from "./CartTotal";
 import { CartCheckoutForm } from "@/components/cartContent/CartCheckoutForm";
 import { OrderSuccessView } from "@/components/cartContent/OrderSuccessView";
 import { StoreClosedDialog } from "@/components/cartContent/StoreClosedDialog";
+import { MinOrderDialog } from "@/components/cartContent/MinOrderDialog";
 
 import { useCheckout } from "@/hooks/useCheckout";
 import { useCheckoutForm } from "@/hooks/useCheckoutForm";
@@ -42,7 +45,19 @@ export const CartContent = memo(function CartContent({
     const { form, setField, setPaymentMethod, setNoChangeNeeded, resetForm } =
         useCheckoutForm();
 
-    const { checkout, loading, error, storeClosed, setStoreClosed } = useCheckout();
+    const { checkout, loading, error, storeClosed, setStoreClosed, minOrderError, setMinOrderError } =
+        useCheckout();
+
+    const [minOrderValue, setMinOrderValue] = useState<number | null>(null);
+
+    useEffect(() => {
+        getStoreSettings()
+            .then((settings) => setMinOrderValue(settings.minOrderValue))
+            .catch(() => {
+                // Se falhar, o aviso inline só não aparece - a checagem no
+                // checkout() e o backend continuam sendo a rede de segurança.
+            });
+    }, []);
 
     const {
         preview: pixReceiptPreview,
@@ -145,6 +160,17 @@ export const CartContent = memo(function CartContent({
                 {/* Total */}
                 {(items.length > 0 || combos.length > 0) && <CartTotal total={total} />}
 
+                {/* Aviso de valor mínimo do pedido */}
+                {(items.length > 0 || combos.length > 0) &&
+                    minOrderValue !== null &&
+                    total > 0 &&
+                    total < minOrderValue && (
+                        <p className="text-sm text-amber-700">
+                            Faltam {formatBRLFromCents(minOrderValue - total)} para o pedido mínimo de{" "}
+                            {formatBRLFromCents(minOrderValue)}
+                        </p>
+                    )}
+
                 {/* Formulário: só aparece com o carrinho não vazio */}
                 {(items.length > 0 || combos.length > 0) && (
                     <CartCheckoutForm
@@ -206,6 +232,15 @@ export const CartContent = memo(function CartContent({
             )}
 
             <StoreClosedDialog open={storeClosed} onOpenChange={setStoreClosed} />
+
+            <MinOrderDialog
+                open={minOrderError !== null}
+                onOpenChange={(open) => {
+                    if (!open) setMinOrderError(null);
+                }}
+                minOrderValue={minOrderError?.minOrderValue ?? 0}
+                missing={minOrderError?.missing}
+            />
         </SheetContent>
     );
 });

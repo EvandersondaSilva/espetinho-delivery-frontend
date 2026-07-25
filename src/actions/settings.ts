@@ -47,3 +47,47 @@ export async function updateStoreStatusAction(isStoreOpen: boolean) {
         };
     }
 }
+
+/**
+ * Action para definir o valor mínimo do pedido
+ * @param minOrderValue - Novo valor mínimo, em centavos
+ * @returns Objeto com sucesso/erro e as configurações atualizadas
+ */
+export async function updateMinOrderValueAction(minOrderValue: number) {
+    try {
+        const token = await getToken();
+
+        if (!token) {
+            return {
+                success: false,
+                message: "Erro ao atualizar valor mínimo: Token de autenticação não encontrado.",
+                data: null,
+            };
+        }
+
+        const response = await apiClient<StoreSettings>("/settings/min-order-value", {
+            method: "PATCH",
+            body: JSON.stringify({ minOrderValue }),
+            token,
+        });
+
+        return {
+            success: true,
+            message: "Valor mínimo do pedido atualizado com sucesso.",
+            data: response,
+        };
+    } catch (error) {
+        const message =
+            error instanceof Error
+                ? error.message
+                : "Erro ao atualizar valor mínimo do pedido.";
+
+        console.error("Error updating min order value:", message);
+
+        return {
+            success: false,
+            message: `Falha ao atualizar valor mínimo: ${message}`,
+            data: null,
+        };
+    }
+}

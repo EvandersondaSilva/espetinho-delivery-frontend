@@ -115,6 +115,13 @@ Mesma correção de modelagem da mudança #13, agora aplicada a `FIXED_PRODUCT`:
 - **Validação do pedido (`POST /order`):** a selection do cliente precisa cobrir **exatamente** todos os itens de `fixedItems` do group, cada um com a `quantity` correspondente (nem a mais, nem a menos) — mesma lógica rígida de antes, agora aplicada a uma lista em vez de 1 produto só.
 - **Migration destrutiva:** a coluna `productId` de `combo_groups` foi removida (substituída pela tabela `combo_group_fixed_items`, um produto fixo por linha). **Combos cadastrados antes dessa mudança perdem o produto fixo dos groups `FIXED_PRODUCT`** — o admin precisa recriá-los. Pedidos já feitos (`OrderCombo`/`OrderComboItem`) não são afetados, pois são snapshots independentes.
 
+### 15. Valor mínimo de pedido (NOVO, aditivo)
+
+- `Settings` ganhou o campo **`minOrderValue`** (centavos, default `1000` = R$ 10,00), presente em `GET /settings`.
+- Nova rota `PATCH /settings/min-order-value` 🔒 JWT — body `{ minOrderValue: number }` (inteiro ≥ 0).
+- `POST /order` passa a **rejeitar com `422`** (`Pedido mínimo de R$ X,XX não atingido`) quando a soma dos itens + combos (sem contar `deliveryFee`) ficar abaixo de `Settings.minOrderValue`. A checagem acontece depois da validação de itens/combos e antes de criar o pedido.
+- Não quebra nada existente: campo novo com default, rota nova, checagem adicional no fluxo de criação de pedido.
+
 ---
 
 ## Convenções gerais
@@ -503,6 +510,7 @@ Config global do estabelecimento (não por usuário). Existe **sempre exatamente
 |-------------|------|-----------|
 | `id` | string | |
 | `isStoreOpen` | boolean | se `false`, `POST /order` passa a rejeitar novos pedidos |
+| `minOrderValue` | number | centavos; `POST /order` rejeita pedidos cuja soma de itens + combos (sem contar `deliveryFee`) fique abaixo desse valor. Default `1000` (R$ 10,00) |
 | `createdAt` | string (ISO) | |
 | `updatedAt` | string (ISO) | |
 
@@ -521,6 +529,16 @@ Público.
 **Sucesso:** `200` — objeto settings atualizado.
 
 **Erros:** `400` validação Zod (`isStoreOpen` não é boolean) · `500` `Falha ao atualizar status da loja`
+
+---
+
+### `PATCH /settings/min-order-value` — Definir valor mínimo do pedido 🔒 JWT
+
+**Body:** `{ "minOrderValue": number }` — centavos, inteiro ≥ 0.
+
+**Sucesso:** `200` — objeto settings atualizado.
+
+**Erros:** `400` validação Zod (`minOrderValue` não é inteiro ≥ 0) · `500` `Falha ao atualizar valor mínimo do pedido`
 
 ---
 
@@ -595,11 +613,13 @@ Cada combo: `{ comboId: string, selections: [{ productId: string, quantity: numb
 
 `selections` precisa cobrir exatamente os groups do combo:
 - `CATEGORY_CHOICE`: a soma das quantities dos produtos selecionados daquela categoria deve estar entre `minQuantity` e `maxQuantity` do group.
-- `FIXED_PRODUCT`: precisa haver uma selection com aquele `productId` e `quantity` igual ao `minQuantity` do group.
+- `FIXED_PRODUCT`: precisa haver uma selection pra **cada** produto de `fixedItems` do group, com `quantity` igual à `quantity` daquele item (nem a mais, nem a menos).
 - Se sobrar alguma selection que não se encaixa em nenhum group, ou faltar cobertura de algum group, o **pedido inteiro** é rejeitado (nenhum item/combo é criado).
 - O preço de cada combo no pedido é o `price` fixo do `Combo` (não soma o preço dos produtos escolhidos).
 
 > **Loja fechada:** antes de validar qualquer item/combo, o servidor checa `Settings.isStoreOpen`. Se a loja estiver fechada, o pedido é rejeitado com `422` `A loja está fechada no momento` — nenhum outro dado é processado. Ver [Configurações da loja](#configurações-da-loja).
+
+> **Valor mínimo do pedido:** depois de validar itens/combos, o servidor soma `preço dos items + preço fixo dos combos` (**sem** contar `deliveryFee`) e compara com `Settings.minOrderValue`. Se ficar abaixo, o pedido é rejeitado com `422` `Pedido mínimo de R$ X,XX não atingido` — nenhum item/combo é criado. Ver [Configurações da loja](#configurações-da-loja).
 
 **Sucesso:** `201` — pedido completo. O `total` é calculado no servidor (soma dos itens + preço fixo de cada combo + `deliveryFee`).
 
@@ -609,6 +629,7 @@ Cada combo: `{ comboId: string, selections: [{ productId: string, quantity: numb
 - `404` `Um ou mais combos não existem` · `422` `Combo "{nome}" indisponível`
 - `404` `Um ou mais produtos das selections não existem` · `422` `Seleção contém produto indisponível`
 - `400` `Seleção do combo "{nome}" não atende ao grupo obrigatório "{label}"` (FIXED_PRODUCT errado/faltando)
+- `422` `Pedido mínimo de R$ X,XX não atingido` (soma de itens + combos abaixo de `Settings.minOrderValue`)
 - `400` `Quantidade selecionada para o grupo "{label}" do combo "{nome}" deve estar entre {min} e {max}` (CATEGORY_CHOICE fora do intervalo)
 - `400` `Seleção contém produto que não pertence a nenhum grupo do combo "{nome}"` (selection sobrando)
 - `500` `Falha ao criar pedido`
@@ -767,6 +788,7 @@ Marca `autoPrinted: true` no pedido. Existe pra suportar a impressão automátic
 | GET | `/combos` | — |
 | GET | `/settings` | — |
 | PATCH | `/settings/store-status` | 🔒 JWT |
+| PATCH | `/settings/min-order-value` | 🔒 JWT |
 | POST | `/order` | — |
 | POST | `/order-item` | 🔒 JWT |
 | DELETE | `/order-item/:id` | 🔒 JWT |

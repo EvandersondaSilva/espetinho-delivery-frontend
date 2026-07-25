@@ -27,10 +27,16 @@ interface CheckoutParams {
     onSuccess?: (orderId: string) => void;
 }
 
+interface MinOrderError {
+    minOrderValue: number;
+    missing?: number;
+}
+
 export function useCheckout() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [storeClosed, setStoreClosed] = useState(false);
+    const [minOrderError, setMinOrderError] = useState<MinOrderError | null>(null);
 
     const checkout = useCallback(async (data: CheckoutParams) => {
         const {
@@ -95,6 +101,13 @@ export function useCheckout() {
                 const settings = await getStoreSettings();
                 if (!settings.isStoreOpen) {
                     setStoreClosed(true);
+                    return;
+                }
+                if (total < settings.minOrderValue) {
+                    setMinOrderError({
+                        minOrderValue: settings.minOrderValue,
+                        missing: settings.minOrderValue - total,
+                    });
                     return;
                 }
             } catch {
@@ -165,8 +178,12 @@ export function useCheckout() {
         } catch (e) {
             const msg = e instanceof Error ? e.message : "Falha ao criar pedido.";
 
+            const minOrderMatch = msg.match(/Pedido mínimo de (R\$\s*[\d.,]+)/);
+
             if (msg.includes("loja está fechada")) {
                 setStoreClosed(true);
+            } else if (minOrderMatch) {
+                setMinOrderError({ minOrderValue: parseBRLToCents(minOrderMatch[1]) });
             } else {
                 setError(msg);
             }
@@ -181,5 +198,7 @@ export function useCheckout() {
         error,
         storeClosed,
         setStoreClosed,
+        minOrderError,
+        setMinOrderError,
     };
 }

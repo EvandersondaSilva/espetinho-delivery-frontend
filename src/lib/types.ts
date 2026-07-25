@@ -29,6 +29,7 @@ export interface Category {
 export interface StoreSettings {
     id: string;
     isStoreOpen: boolean;
+    minOrderValue: number;
     createdAt: string;
     updatedAt: string;
 }
