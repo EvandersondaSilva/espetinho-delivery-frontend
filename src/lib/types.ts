@@ -53,8 +53,7 @@ export interface ComboGroup {
     label: string;
     categories: { id: string; name: string }[];
     products?: Product[];
-    productId: string | null;
-    product: Product | null;
+    fixedItems: (Product & { quantity: number })[];
     minQuantity: number;
     maxQuantity: number;
 }

@@ -3,11 +3,16 @@
 import { useCallback, useState } from "react";
 import { ComboGroupType } from "@/lib/types";
 
+export interface ComboGroupFixedItemFormValue {
+    productId: string;
+    quantity: number;
+}
+
 export interface ComboGroupFormValue {
     type: ComboGroupType;
     label: string;
     categoryIds: string[];
-    productId: string;
+    fixedItems: ComboGroupFixedItemFormValue[];
     minQuantity: number;
     /** string para permitir campo vazio; "" = deixa o backend usar minQuantity como default */
     maxQuantity: string;
@@ -17,7 +22,7 @@ const EMPTY_GROUP: ComboGroupFormValue = {
     type: "CATEGORY_CHOICE",
     label: "",
     categoryIds: [],
-    productId: "",
+    fixedItems: [],
     minQuantity: 1,
     maxQuantity: "",
 };
@@ -65,16 +70,26 @@ export function validateComboGroups(groups: ComboGroupFormValue[]): string | nul
             return 'Selecione pelo menos uma categoria em todos os grupos do tipo "Escolha por categoria".';
         }
 
-        if (group.type === "FIXED_PRODUCT" && !group.productId) {
-            return 'Selecione o produto em todos os grupos do tipo "Produto fixo".';
+        if (group.type === "FIXED_PRODUCT") {
+            if (group.fixedItems.length === 0) {
+                return 'Adicione pelo menos um produto fixo em todos os grupos do tipo "Produto fixo".';
+            }
+
+            for (const item of group.fixedItems) {
+                if (!item.productId || !item.quantity || item.quantity < 1) {
+                    return "Selecione o produto e uma quantidade válida em todos os produtos fixos.";
+                }
+            }
         }
 
-        if (!group.minQuantity || group.minQuantity < 1) {
-            return "A quantidade mínima de cada grupo deve ser pelo menos 1.";
-        }
+        if (group.type === "CATEGORY_CHOICE") {
+            if (!group.minQuantity || group.minQuantity < 1) {
+                return "A quantidade mínima de cada grupo deve ser pelo menos 1.";
+            }
 
-        if (group.maxQuantity && Number(group.maxQuantity) < group.minQuantity) {
-            return "A quantidade máxima não pode ser menor que a mínima.";
+            if (group.maxQuantity && Number(group.maxQuantity) < group.minQuantity) {
+                return "A quantidade máxima não pode ser menor que a mínima.";
+            }
         }
     }
 
@@ -90,9 +105,11 @@ export function serializeComboGroups(groups: ComboGroupFormValue[]) {
         type: group.type,
         label: group.label.trim(),
         ...(group.type === "CATEGORY_CHOICE"
-            ? { categoryIds: group.categoryIds }
-            : { productId: group.productId }),
-        minQuantity: group.minQuantity,
-        ...(group.maxQuantity ? { maxQuantity: Number(group.maxQuantity) } : {}),
+            ? {
+                categoryIds: group.categoryIds,
+                minQuantity: group.minQuantity,
+                ...(group.maxQuantity ? { maxQuantity: Number(group.maxQuantity) } : {}),
+            }
+            : { fixedItems: group.fixedItems }),
     }));
 }

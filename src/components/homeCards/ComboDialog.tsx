@@ -115,7 +115,14 @@ function ComboGroupSection({
     if (group.type === "FIXED_PRODUCT") {
         return (
             <div>
-                <p className="font-medium">{group.label} — incluso</p>
+                <p className="font-medium">{group.label}</p>
+                <div className="flex flex-col gap-1 mt-2">
+                    {group.fixedItems.map((item) => (
+                        <p key={item.id} className="text-sm text-muted-foreground">
+                            {item.quantity}x {item.name} — incluso
+                        </p>
+                    ))}
+                </div>
                 <Separator className="mt-3" />
             </div>
         );

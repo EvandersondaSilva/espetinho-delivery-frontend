@@ -62,7 +62,7 @@ export function ComboGroupsEditor({
                                 onUpdate(index, {
                                     type: value as ComboGroupFormValue["type"],
                                     categoryIds: [],
-                                    productId: "",
+                                    fixedItems: [],
                                 })
                             }
                         >
@@ -108,22 +108,80 @@ export function ComboGroupsEditor({
                         </div>
                     ) : (
                         <div className="grid gap-1.5">
-                            <Label>Produto</Label>
-                            <Select
-                                value={group.productId}
-                                onValueChange={(value) => onUpdate(index, { productId: value })}
+                            <Label>Produtos fixos</Label>
+                            <div className="space-y-2">
+                                {group.fixedItems.map((item, itemIndex) => (
+                                    <div key={itemIndex} className="flex items-center gap-2">
+                                        <Select
+                                            value={item.productId}
+                                            onValueChange={(value) =>
+                                                onUpdate(index, {
+                                                    fixedItems: group.fixedItems.map((fi, i) =>
+                                                        i === itemIndex ? { ...fi, productId: value } : fi
+                                                    ),
+                                                })
+                                            }
+                                        >
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Selecione um produto" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {products.map((product) => (
+                                                    <SelectItem key={product.id} value={product.id}>
+                                                        {product.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <Input
+                                            type="number"
+                                            min={1}
+                                            step={1}
+                                            className="w-24 shrink-0"
+                                            value={item.quantity}
+                                            onChange={(e) =>
+                                                onUpdate(index, {
+                                                    fixedItems: group.fixedItems.map((fi, i) =>
+                                                        i === itemIndex
+                                                            ? { ...fi, quantity: Number(e.target.value) }
+                                                            : fi
+                                                    ),
+                                                })
+                                            }
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() =>
+                                                onUpdate(index, {
+                                                    fixedItems: group.fixedItems.filter(
+                                                        (_, i) => i !== itemIndex
+                                                    ),
+                                                })
+                                            }
+                                            aria-label="Remover produto fixo"
+                                        >
+                                            <X className="size-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() =>
+                                    onUpdate(index, {
+                                        fixedItems: [
+                                            ...group.fixedItems,
+                                            { productId: "", quantity: 1 },
+                                        ],
+                                    })
+                                }
                             >
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Selecione um produto" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {products.map((product) => (
-                                        <SelectItem key={product.id} value={product.id}>
-                                            {product.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                <Plus className="size-4 mr-2" />
+                                Adicionar produto fixo
+                            </Button>
                         </div>
                     )}
 
@@ -162,20 +220,7 @@ export function ComboGroupsEditor({
                                 />
                             </div>
                         </div>
-                    ) : (
-                        <div className="grid gap-1.5">
-                            <Label>Quantidade</Label>
-                            <Input
-                                type="number"
-                                min={1}
-                                step={1}
-                                value={group.minQuantity}
-                                onChange={(e) =>
-                                    onUpdate(index, { minQuantity: Number(e.target.value) })
-                                }
-                            />
-                        </div>
-                    )}
+                    ) : null}
                 </div>
             ))}
 

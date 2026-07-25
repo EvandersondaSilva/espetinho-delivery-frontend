@@ -40,7 +40,11 @@ function mapGroupsToFormValues(groups: ComboGroup[]): ComboGroupFormValue[] {
         type: group.type,
         label: group.label,
         categoryIds: group.categories?.map((c) => c.id) ?? [],
-        productId: group.productId ?? "",
+        fixedItems:
+            group.fixedItems?.map((item) => ({
+                productId: item.id,
+                quantity: item.quantity,
+            })) ?? [],
         minQuantity: group.minQuantity,
         // Se max === min, trata como "quantidade exata" (campo em branco no form)
         maxQuantity:

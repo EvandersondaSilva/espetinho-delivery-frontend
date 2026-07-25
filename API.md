@@ -104,6 +104,17 @@ Corrige um bug de modelagem: antes, um group `CATEGORY_CHOICE` só podia apontar
 - **Validação do pedido (`POST /order`):** a soma das quantities de um group `CATEGORY_CHOICE` agora considera produtos de **qualquer uma** das categorias do group, não mais de uma única categoria.
 - **Migration destrutiva:** a coluna `categoryId` de `combo_groups` foi removida (substituída pela tabela `combo_group_categories`, many-to-many). **Combos cadastrados antes dessa mudança perdem a associação de categoria dos groups `CATEGORY_CHOICE`** — o admin precisa recriá-los. Pedidos já feitos (`OrderCombo`/`OrderComboItem`) não são afetados, pois são snapshots independentes.
 
+### 14. Combo: group `FIXED_PRODUCT` agora aceita múltiplos produtos fixos (BREAKING)
+
+Mesma correção de modelagem da mudança #13, agora aplicada a `FIXED_PRODUCT`: antes, um group `FIXED_PRODUCT` só podia incluir **1 produto fixo** (`productId` único + `minQuantity` como a quantidade). Pra montar "acompanhamentos inclusos" com mais de 1 produto obrigatório (ex.: pão + vinagrete), era preciso criar 1 group por produto.
+
+- **Payload (`POST`/`PUT /combo`):** campo `productId` (string) do group `FIXED_PRODUCT` foi substituído por **`fixedItems`** (array de `{ productId, quantity }`, mín. 1 item). O campo `minQuantity` do group deixou de ser usado/obrigatório para `FIXED_PRODUCT` — a quantidade agora é por item, em `fixedItems[].quantity`.
+- **Resposta (`GET /combo`, `GET /combo/:id`, `GET /combos`):** `group.productId`/`group.product` foram substituídos por **`group.fixedItems`** — array com os dados completos de cada produto fixo mais a `quantity`, ex.: `[{ id, name, price, description, imageUrl, available, stock, categoryId, createdAt, quantity }, ...]`.
+- **Regra de duplicata:** não é permitido repetir o mesmo `productId` dentro do `fixedItems` do mesmo group (`400`).
+- **Regra de overlap** com categorias continua valendo, agora considerando todos os produtos de `fixedItems`: nenhum deles pode pertencer a uma categoria já usada em algum group `CATEGORY_CHOICE` do mesmo combo.
+- **Validação do pedido (`POST /order`):** a selection do cliente precisa cobrir **exatamente** todos os itens de `fixedItems` do group, cada um com a `quantity` correspondente (nem a mais, nem a menos) — mesma lógica rígida de antes, agora aplicada a uma lista em vez de 1 produto só.
+- **Migration destrutiva:** a coluna `productId` de `combo_groups` foi removida (substituída pela tabela `combo_group_fixed_items`, um produto fixo por linha). **Combos cadastrados antes dessa mudança perdem o produto fixo dos groups `FIXED_PRODUCT`** — o admin precisa recriá-los. Pedidos já feitos (`OrderCombo`/`OrderComboItem`) não são afetados, pois são snapshots independentes.
+
 ---
 
 ## Convenções gerais
@@ -339,11 +350,11 @@ Público. **Sucesso:** `200` — array (formato completo, **inclui `available`**
 Um combo tem preço **fixo** (não varia conforme os produtos escolhidos) e é composto por um ou mais **groups**:
 
 - `CATEGORY_CHOICE`: o cliente escolhe produtos de **uma ou mais categorias combinadas**, com quantidade total entre `minQuantity` e `maxQuantity`. Ex.: "escolha 2 espetos de qualquer tipo de carne" = um group com `categoryIds: [carnes-bovina, carnes-frango, carnes-suina]`, `minQuantity: 2`, `maxQuantity: 2` — soma-se a quantidade de produtos de **qualquer uma** dessas categorias.
-- `FIXED_PRODUCT`: um produto específico e obrigatório, sempre na quantidade `minQuantity`.
+- `FIXED_PRODUCT`: um ou mais produtos específicos e obrigatórios, cada um com sua própria quantidade fixa (`fixedItems: [{ productId, quantity }, ...]`), todos inclusos automaticamente no combo — o cliente não escolhe nada nesse group, só confirma a quantidade exata de cada item.
 
-Se `maxQuantity` não for informado ao criar/editar um group, assume `maxQuantity = minQuantity` (quantidade exata).
+Se `maxQuantity` não for informado ao criar/editar um group `CATEGORY_CHOICE`, assume `maxQuantity = minQuantity` (quantidade exata). `minQuantity`/`maxQuantity` não são usados em groups `FIXED_PRODUCT` (a quantidade de cada produto vem de `fixedItems[].quantity`).
 
-> Regra de criação: nenhuma categoria pode aparecer em mais de um lugar do mesmo combo — nem repetida dentro do `categoryIds` do próprio group, nem em outro group `CATEGORY_CHOICE`, nem como categoria do produto de um `FIXED_PRODUCT`. Viola essa regra → `400`.
+> Regra de criação: nenhuma categoria pode aparecer em mais de um lugar do mesmo combo — nem repetida dentro do `categoryIds` do próprio group, nem em outro group `CATEGORY_CHOICE`, nem como categoria de um produto de `fixedItems`. Viola essa regra → `400`. Também não é permitido repetir o mesmo `productId` dentro do `fixedItems` de um mesmo group `FIXED_PRODUCT` → `400`.
 
 **Objeto combo (admin, `comboSelect`):**
 
@@ -366,10 +377,9 @@ Se `maxQuantity` não for informado ao criar/editar um group, assume `maxQuantit
 | `type` | string | `CATEGORY_CHOICE` \| `FIXED_PRODUCT` |
 | `label` | string | |
 | `categories` | array | `[{ id, name }, ...]` — todas as categorias do group; vazio (`[]`) quando `FIXED_PRODUCT` |
-| `productId` | string \| null | preenchido quando `FIXED_PRODUCT` |
-| `product` | object \| null | produto completo |
-| `minQuantity` | number | |
-| `maxQuantity` | number | |
+| `fixedItems` | array | `[{ ...produto, quantity }, ...]` — produtos fixos do group (dados completos do produto + `quantity`); vazio (`[]`) quando `CATEGORY_CHOICE` |
+| `minQuantity` | number | só relevante para `CATEGORY_CHOICE` |
+| `maxQuantity` | number | só relevante para `CATEGORY_CHOICE` |
 
 Na listagem **pública** (`GET /combos`), cada group `CATEGORY_CHOICE` ganha um campo extra `products` — lista **agregada** dos produtos com `available: true` de **todas** as categorias do group (não mais aninhado dentro de uma única categoria).
 
@@ -385,7 +395,7 @@ Na listagem **pública** (`GET /combos`), cada group `CATEGORY_CHOICE` ganha um 
 | `name` | string | sim | |
 | `price` | string | sim | Enviado como string; servidor faz `parseInt` → centavos |
 | `description` | string | não | |
-| `groups` | string | sim | **JSON stringificado** de um array de groups (ver abaixo) — ex.: `groups=[{"type":"FIXED_PRODUCT","label":"Bebida","productId":"uuid","minQuantity":1}]` |
+| `groups` | string | sim | **JSON stringificado** de um array de groups (ver abaixo) — ex.: `groups=[{"type":"FIXED_PRODUCT","label":"Acompanhamentos inclusos","fixedItems":[{"productId":"uuid","quantity":1}]}]` |
 
 **Cada group em `groups`:**
 
@@ -399,14 +409,25 @@ Na listagem **pública** (`GET /combos`), cada group `CATEGORY_CHOICE` ganha um 
 }
 ```
 
+```json
+{
+  "type": "FIXED_PRODUCT",
+  "label": "Acompanhamentos inclusos",
+  "fixedItems": [
+    { "productId": "uuid-pao", "quantity": 1 },
+    { "productId": "uuid-vinagrete", "quantity": 2 }
+  ]
+}
+```
+
 | Propriedade | Tipo | Regras |
 |-------------|------|--------|
 | `type` | string | `CATEGORY_CHOICE` \| `FIXED_PRODUCT` |
 | `label` | string | não vazio |
 | `categoryIds` | array de string | obrigatório se `CATEGORY_CHOICE`, mín. 1 item; todas as categorias precisam existir |
-| `productId` | string | obrigatório se `FIXED_PRODUCT`; produto precisa existir |
-| `minQuantity` | number | inteiro ≥ 1 |
-| `maxQuantity` | number | opcional; se informado, ≥ `minQuantity`. Default = `minQuantity` |
+| `fixedItems` | array de `{ productId, quantity }` | obrigatório se `FIXED_PRODUCT`, mín. 1 item; `productId` não pode se repetir na lista; todos os produtos precisam existir; `quantity` inteiro ≥ 1 |
+| `minQuantity` | number | obrigatório se `CATEGORY_CHOICE` (inteiro ≥ 1); ignorado se `FIXED_PRODUCT` |
+| `maxQuantity` | number | opcional, só usado em `CATEGORY_CHOICE`; se informado, ≥ `minQuantity`. Default = `minQuantity` |
 
 **Sucesso:** `200` — combo criado (formato admin).
 

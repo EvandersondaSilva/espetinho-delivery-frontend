@@ -6,7 +6,7 @@ function isProductAvailable(product: { available: boolean; stock: number } | nul
 
 export function isGroupFulfillable(group: ComboGroup): boolean {
     if (group.type === "FIXED_PRODUCT") {
-        return isProductAvailable(group.product);
+        return group.fixedItems.every(isProductAvailable);
     }
 
     const availableProducts = group.products?.filter(isProductAvailable) ?? [];

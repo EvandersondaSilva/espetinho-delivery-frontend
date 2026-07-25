@@ -91,12 +91,13 @@ export function useComboSelection(combo: Combo) {
 
         combo.groups.forEach((group) => {
             if (group.type === "FIXED_PRODUCT") {
-                if (!group.productId || !group.product) return;
-                selections.push({ productId: group.productId, quantity: group.minQuantity });
-                displayItems.push({
-                    productId: group.productId,
-                    name: group.product.name,
-                    quantity: group.minQuantity,
+                group.fixedItems.forEach((item) => {
+                    selections.push({ productId: item.id, quantity: item.quantity });
+                    displayItems.push({
+                        productId: item.id,
+                        name: item.name,
+                        quantity: item.quantity,
+                    });
                 });
                 return;
             }
