@@ -44,7 +44,7 @@ export function ComboDialog({ combo, open, onOpenChange }: ComboDialogProps) {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-full max-w-90vw lg:max-w-352 min-h-75vh bg-white p-6">
+            <DialogContent className="w-full max-w-[90vw] lg:max-w-88 min-h-[75vh] max-h-[90vh] overflow-y-auto bg-white p-6">
                 <DialogHeader>
                     <DialogTitle>{combo.name}</DialogTitle>
                     <DialogDescription>{combo.description}</DialogDescription>
